@@ -4,14 +4,6 @@ A Drupal module that servers as an interface between [Harvard University PIN sys
 and Drupal applications / websites. The purpose of this module is to encapsulate low level details of
 PIN and provide and set of APIs for drupal developers.
 
-
-Provides developer API for the
-[Harvard University PIN system](http://www.pin.harvard.edu/). Similar to
-single-sign-on (SSO), Harvard PIN allows anyone with a Harvard ID to access
-exclusive Harvard-only websites or services, based on the public-private-key
-based PGP, OpenPGP or GPG standard. This module handles low-level details of
-Harvard PIN for Drupal integration.
-
 The module was developed for and it's part of [OpenScholar](http://openscholar.harvard.edu)
 distribution but does not depend on OpenScholar and can be used in any Drupal installation.
 
