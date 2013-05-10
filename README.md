@@ -2,7 +2,11 @@
 
 A Drupal module that servers as an interface between Harvard PIN and Drupal applications / websites.
 The purpose of this module is to encapsulate low level details of PIN and provide and set of APIs for
-drupal developers.  
+drupal developers. 
+
+The module was developed for and it's part of [OpenScholar](http://openscholar.harvard.edu) distribution
+but does not depend on OpenScholad and can be used in any Drupal installation. 
+   
 
 ## Installation
 
