@@ -1,16 +1,44 @@
+# Harvard PIN
+
+A drupal 7 module
+
 ## About
 
-A Drupal module that servers as an interface between Harvard PIN and Drupal applications / websites.
-The purpose of this module is to encapsulate low level details of PIN and provide and set of APIs for
-drupal developers. 
+Provides developer API for the
+[Harvard University PIN system](http://www.pin.harvard.edu/). Similar to
+single-sign-on (SSO), Harvard PIN allows anyone with a Harvard ID to access
+exclusive Harvard-only websites or services, based on the public-private-key
+based PGP, OpenPGP or GPG standard. This module handles low-level details of
+Harvard PIN for Drupal integration.
 
-The module was developed for and it's part of [OpenScholar](http://openscholar.harvard.edu) distribution
-but does not depend on OpenScholad and can be used in any Drupal installation. 
-   
+The module was developed for the [OpenScholar](http://openscholar.harvard.edu)
+Drupal profile (distribution). However, the module does not depend on
+OpenScholar or any non-core module, and can be used in any Drupal 7 site.
 
-## Installation
+Some possible applications for this module are:
 
-Install as any other drupal module see http://drupal.org/node/70151 for further information.
+* Protected content; restrict certain nodes to only allow Harvard PIN access
+* Harvard PIN user authentication; only allow users to log in with Harvard PIN.
+
+## Install
+
+In order to get a working PIN application on a Drupal site, you will need to:
+
+1. [Install the module](http://drupal.org/documentation/install/modules-themes)
+2. [Register as a PIN2 customer](http://reference.pin.harvard.edu/dev-registration)
+3. [Download and install GPG](http://www.gnupg.org/download/index.en.html)
+4. [Create a GPG key on your server](http://www.dewinter.com/gnupg_howto/english/GPGMiniHowto-3.html#ss3.1)
+5. [Import the Harvard PIN public key](http://www.dewinter.com/gnupg_howto/english/GPGMiniHowto-3.html#ss3.3)
+6. Send your public GPG key to directory_services@harvard.edu
+7. Configure your GPG and Harvard PIN application info at /admin/settings/pinserver
+
+Note: This module currently only implements Harvard PIN API version 1 and
+version 2. There is currently no support in this module for Oracle Access
+Manager (Harvard PIN API version 3).
+
+For more information about developing with PIN, see the
+[Harvard PIN Customer Guide](http://reference.pin.harvard.edu/dev-overview)
+or the Harvard PIN2 Developer Resources PDF](http://reference.pin.harvard.edu/sites/reference.pin.harvard.edu/files/PIN2%20Developer%20Resources.pdf)
 
 ## Contribute
 
@@ -24,6 +52,5 @@ Joe Weiner [@jjweiner](https://github.com/jjweiner), Richard Brandon [@rbran100]
 , Shane Dupree [@shanedupree](https://github.com/shanedupree), 
 Oren Robinson [@baisong](https://github.com/baisong) Seth Gregory, Blaise Freeman, 
 Ferdi Alimadhi [@Ferdi](https://github.com/Ferdi) for their contribution with code and/or ideas.
-
 
 Special thanks to [IQSS](http://iq.harvard.edu) and [HWP](http://hwp.harvard.edu) for supporting our work.
