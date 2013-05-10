@@ -1,0 +1,5 @@
+name = Pinserver
+description = This module will act as a secure authentication conduit between Drupal and the Harvard University PIN server.
+package = OpenScholar Harvard
+core = 7.x
+features[user_permission][] = administer pinserver

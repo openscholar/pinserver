@@ -1,0 +1,545 @@
+<?php
+// $Id$
+
+include_once ('includes/pinserver.api.inc');
+
+/**
+ * Implements hook_menu().
+ */
+function pinserver_menu() {
+  $path = drupal_get_path('module', 'pinserver');
+  $items = array();
+
+  $items['pinserver/auth'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'pinserver_check_user',
+    'page arguments' => array(TRUE),
+    'access callback' => TRUE,
+  );
+
+  $items['pinserver/error'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => t('Authentication Error'),
+    'page callback' => 'pinserver_error',
+    'access callback' => TRUE,
+  );
+
+  $items['admin/config/openscholar/pinserver'] = array(
+    'title' => t('Pinserver'),
+    'description' => t('Modify Harvard Pinserver configuration, access, and logging'),
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 0,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pinserver_config'),
+    'access arguments' => array('administer pinserver'),
+    'file' => 'pinserver.admin.inc',
+    'file path' => $path,
+  );
+
+  $items['pinserver/forbidden'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => t('Forbidden'),
+    'page callback' => 'pinserver_forbidden_page',
+    'access callback' => TRUE,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function pinserver_permission() {
+  return array(
+    'administer pinserver' => array(
+      'title' => 'Administer Pinserver',
+      'description' => 'Allows users to administer Pinserver',
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function pinserver_theme() {
+  return array(
+    'pinserver_token_error' => array(
+      'arguments' => array('values' => NULL),
+    ),
+  );
+}
+
+/**
+ * Implements hook_user_logout().
+ */
+function pinserver_user_logout($account) {
+  pinserver_remove_session();
+}
+
+/**
+ * Redirects user to PIN login url
+ *
+ * @see os_files_private_file_download()
+ * @see iqss_pinserver_register_form_access()
+ */
+function pinserver_redirect($args = array()) {
+
+  $args['__authen_application'] = variable_get('pinserver_app_name');
+  $redirect_url = url(variable_get('pinserver_pin_url'),array('query' => $args));
+
+  drupal_goto($redirect_url);
+}
+
+/**
+ * Menu callback called when returning from pinserver
+ *
+ * This will either forward the request to the correct page, or authenticate and create a user session.
+ */
+function pinserver_check_user() {
+
+  // First, verifies the pinserver settings.
+  if ($error = pinserver_check_system_settings()) {
+    error_log($error);
+    drupal_set_message(t("Harvard PIN service is not available at this time but should be available shortly. Please check back later or email us at !support_mail.", array('!support_mail' => '<a href=mailto:' . variable_get('pinserver_support_contact') . '>' . variable_get('pinserver_support_contact') . '</a>')));
+    drupal_goto();
+  }
+
+  if (isset($_GET['tk_forward']) && isset($_GET['redirect'])) {
+    drupal_goto(ltrim($_GET['redirect'], '/'),array('query' => drupal_get_query_parameters(NULL,array('q','tk_forward','redirect'))));
+  }
+
+  //Validate User
+  if(!pinserver_authenticate_user(TRUE)){
+    $errors = implode(',', pinserver_get_errors());
+    drupal_goto("pinserver/error/token/$errors");
+  }
+
+  // Invokes hook_pinserver().
+  module_invoke_all('pinserver');
+
+  // Redirects user to redirect URL if specified (probably a private file)
+  if (isset($_GET['redirect'])) {
+    drupal_goto(ltrim($_GET['redirect'], '/'));
+  }
+
+  // Redirects user to landing page set in pinserver configuration page
+  drupal_goto(variable_get('pinserver_landing_path','site/register'));
+}
+
+/**
+ * Use the avalible tokens to authenticate and login a user.
+ *
+ * @param boolean $use_session
+ */
+function pinserver_authenticate_user($use_session = FALSE){
+
+  // First, verifies the pinserver settings.
+  if ($error = pinserver_check_system_settings()) {
+    return false;
+  }
+
+  // Parses and validates the PIN token.
+  $token_data = pinserver_check_token();
+
+  // Redirects to error page if any errors are returned.
+  if (is_array($token_data) && isset($token_data['errors']) && count($token_data['errors']) > 0) {
+    pinserver_get_errors(array_unique($token_data['errors']));
+    return FALSE;
+  }
+
+  // Success! Code beyond this point handles a successful PIN authentication.
+  pinserver_add_user_from_token($token_data, $use_session);
+
+  return true;
+}
+
+/**
+ * Store any errors logged during pin authentication.
+ *
+ * @param array $errors
+ */
+function pinserver_get_errors($errors = false){
+  $pin_errors = &drupal_static(__FUNCTION__,array());
+
+  if($errors){
+    $pin_errors = $errors;
+  }
+
+  return $pin_errors;
+}
+
+/**
+ * Prepares the unencrypted PIN v1 token for authentication.
+ *
+ * @return array $values
+ *   Authentication parameters and signature in a single array.
+ */
+function pinserver_prepare_pin_v1_token() {
+  $values = array();
+
+  // Collect URL parameters
+  $app           = $_GET['__authen_application'];
+  $user_id       = $_GET['__authen_huid'];
+  $proxy_id      = "";
+  $ip            = $_GET['__authen_ip'];
+  $time          = $_GET['__authen_time'];
+  $pgp_signature = $_GET['__authen_pgp_signature'];
+  $pgp_version   = $_GET['__authen_pgp_version'];
+
+  // Construct the auth token from the returned URL arguments from PIN server.
+  $values['token'] = $app . "|" . $user_id . "|" . $proxy_id . "|" . $ip . "|" . $time;
+
+  // The signature is passed as is.
+  $values['pgp_signature'] = $pgp_signature;
+
+  // User ID is returned as a hash for safer storage.
+  $values['user_id'] = (variable_get('pinserver_hash_huid') == '1') ? md5($user_id) : $user_id;
+
+  // Time must be converted into unix timestamp.
+  $exploded_time = explode(" ", $time);
+  $values['time'] = strtotime($exploded_time[1] . " " . $exploded_time[2] . " " . $exploded_time[5] . " " . $exploded_time[3]);
+
+  // Client IP is returned as is.
+  $values['ip'] = $ip;
+
+  // App Name is returned as is.
+  $values['app'] = $app;
+
+  // ID type is returned as PIN.
+  $values['login_type'] = 'PIN';
+
+  //set appropriate good signature string for this type of token
+  $values['good_sig'] = variable_get('pinserver_auth_str');
+
+  return $values;
+}
+
+/**
+ * Prepares the unencrypted PIN v2 token for authentication.
+ *
+ * @return array $values
+ *   Authentication parameters and signature in a single array.
+ */
+function pinserver_prepare_pin_v2_token($pin_parameters, $pin_signature) {
+  $values = array();
+
+  // Deconstruct parameters from the authentication token.
+  $token_array = explode('|', $pin_parameters);
+
+  // The token data is passed as is.
+  $values['token'] = $pin_parameters;
+
+  // @todo The signature is passed as is.
+  $values['pgp_signature'] = $pgp_signature;
+
+  // App Name is returned as is.
+  $values['app'] = $token_array[0];
+
+  // User ID is returned as a hash for safer storage.
+  $values['user_id'] = (variable_get('pinserver_hash_huid') == '1') ? md5($token_array[1]) : $token_array[1];
+
+  // Unused parameter proxy_id
+  // $values['proxy_id'] = $token_array[2];
+
+  // Client IP is returned as is.
+  $values['ip'] = $token_array[3];
+
+  // Time must be converted into unix timestamp.
+  $exploded_time = explode(" ", $token_array[4]);
+  $values['time'] = strtotime($exploded_time[1] . " " . $exploded_time[2] . " " . $exploded_time[5] . " " . $exploded_time[3]);
+
+  // Unused parameter "blank"
+  // $token_array[5]
+
+  // ID type is returned as is.
+  $values['login_type'] = $token_array[6];
+
+  //set appropriate good signature string for this type of token
+  $values['good_sig'] = variable_get('pinserver_auth_str', '');
+
+  return $values;
+}
+
+/**
+ * Prepares the unencrypted AuthZProxy v2 token for authentication.
+ *
+ * @return array $values
+ *   Authentication parameters and signature in a single array.
+ */
+function pinserver_prepare_azp_token($gpg_output) {
+  $values = array();
+
+  // Deconstruct parameters from the token.
+  $token_array = explode('|', urldecode($gpg_output));
+
+  // PGP signature is hard to find.
+  foreach ($token_array as $key) {
+    if(preg_match('/\r/', $key)) {
+      $a1 = explode('=', $key);
+      $a2 = explode('&', $a1[1]);
+      $values['pgp_signature'] = $a2[1];
+    }
+  }
+
+  // App Name is returned as is.
+  $values['app'] = $token_array[3];
+
+  // User ID can be returned as a hash for safer storage.
+  $values['user_id'] = (variable_get('pinserver_hash_huid') == '1') ? md5($token_array[0]) : $token_array[0];
+
+  // Harvard Department.
+  $values['department'] = preg_replace('/.*=/', '', $token_array[4]);
+
+  // Client IP is returned as is.
+  $values['ip'] = $token_array[2];
+
+  // Time must be converted into unix timestamp.
+  $values['time'] = strtotime($token_array[1]);
+
+  return $values;
+}
+
+/**
+ * pinserver_check_token()
+ *
+ * This function serves to check all components of the returned token in compliance with the
+ * Harvard UIS procedures speficied at: http://www.pin.harvard.edu/dev-guide-token.shtml
+ * It is instantiated when the user has just logged in via the Harvard PIN server and has now
+ * been returned to the Drupal site
+ *
+ * @return array $values
+ *   If the detached signature is deemed good, it returns
+ *
+ *   Otherwise it prohibits the user from logging in.
+ */
+function pinserver_check_token() {
+  // Initialize the return values.
+  $command = variable_get('pinserver_gpg_bin') . ' --homedir "' . variable_get('pinserver_gpg_dir') . '" --verify';
+  $azp = FALSE;  // AuthZProxy mode
+
+  /*
+   * Prepare token differently depending on the token type and version
+   */
+
+  // Pin Token Version 2
+  if ($pin_parameters = isset($_GET['__authen_parameters']) ? $_GET['__authen_parameters'] : '' &&
+    $pin_signature = isset($_GET['__authen_pgp_signature']) ? $_GET['__authen_pgp_signature'] : ''
+  ) {
+    $values = pinserver_prepare_pin_v2_token($pin_parameters, $pin_signature);
+  }
+  // Pin Token Version 1
+  else if (isset($_GET['__authen_huid'])) {
+    $values = pinserver_prepare_pin_v1_token();
+  }
+  // AuthZProxy token
+  else if (isset($_GET['_azp_token'])) {
+    $azp = TRUE;
+    $command = variable_get('pinserver_gpg_bin') . ' --no-mdc-warning --no-tty --batch --passphrase-file "' . variable_get('pinserver_azp_passphrase') . '" --homedir "' . variable_get('pinserver_gpg_dir') . '" --decrypt';
+  }
+  else {
+    $values['errors'][] = 'unrecognized-url';
+    return $values;
+  }
+
+  $pgp_message = '';
+
+  if ($azp) {
+    $pgp_message = $_GET['_azp_token'];
+  }
+  else {
+    $pgp_message = "-----BEGIN PGP SIGNED MESSAGE-----" . "\n";
+    $pgp_message .= "Hash: SHA1" . "\n";
+    $pgp_message .= "\n";
+    $pgp_message .= $values['token'] . "\n";
+    $pgp_message .= "-----BEGIN PGP SIGNATURE-----" . "\n";
+    $pgp_message .= "Version: 5.0" . "\n";
+    $pgp_message .= "\n";
+    $pgp_message .= $values['pgp_signature'] . "\n";
+    $pgp_message .= "-----END PGP SIGNATURE-----" . "\n";
+  }
+
+  $stdout = '';
+  $stderr = '';
+
+  // Use gnupg to verify signature.
+  $descriptorspec = array(
+    // stdin
+    0 => array('pipe', 'r'),
+    // stdout
+    1 => array('pipe', 'w'),
+    // stderr
+    2 => array('pipe', 'w'),
+  );
+
+  $process = proc_open($command, $descriptorspec, $pipes);
+
+  if (!is_resource($process)) {
+    $values['errors'][] = 'signature-gpg';
+    return $values;
+  }
+
+  fwrite($pipes[0], $pgp_message);
+  fclose($pipes[0]);
+
+  $stdout = stream_get_contents($pipes[1]);
+  fclose($pipes[1]);
+
+  $stderr = stream_get_contents($pipes[2]);
+  fclose($pipes[2]);
+
+  $return_value = proc_close($process);
+
+  if ($azp) {
+    // Now we have decoded the message; we can pull out the required values.
+    $values = pinserver_prepare_azp_token($stdout);
+  }
+
+  /**
+   * Save errors to file if set in configuration options and file exists.
+   * File should be placed below root, recommended only for development/testing.
+   */
+  if (variable_get('pinserver_error_logging_enabled')) {
+    $fp = fopen(variable_get('pinserver_error_log'), 'w');
+    if (!fwrite($fp, $stderr)) {
+      // Not too big a deal, but mention there was a problem.
+      error_log('Error writing GPG output to ' . variable_get('pinserver_error_log'));
+    }
+    fclose($fp);
+  }
+
+  if (strlen($stderr) && strstr($stderr, "fatal") && variable_get('pinserver_error_email') !== '') {
+    mail(
+      variable_get('pinserver_error_email'),
+      mime_header_encode('Pinserver Error'),
+      str_replace("\r", '', $stderr)
+    );
+  }
+
+  // If good signature statement is not found within gpg output
+  // or exit code from process is not 0, then it is a bad signature.
+  if (!$azp && (strpos($stderr, $values['good_sig']) === FALSE || $return_value != 0)) {
+    $values['errors'][] = 'signature-match';
+  }
+
+  /*
+  Now that PGP Signature has been verified, all other token components
+  that require validation must be processed, as specified by the HU directory
+  services developer's manual: http://www.pin.harvard.edu/dev-guide-token.shtml
+  This includes checking the following URL parameters:
+  1) __authen_application / "Application Id" must match the application name
+  2) __authen_ip / "Ip Address" must match the IP address of the current user
+  3) __authen_time / "Timestamp" is valid and not more than a few minutes old
+  */
+
+  // Verify application name.
+  if ($values['app'] != variable_get('pinserver_app_name')) {
+    $values['errors'][] = 'name';
+  }
+
+  if (variable_get('pinserver_ip_validation') == 1) {
+    // Verify current user's IP address.
+    if ($values['ip'] !== $_SERVER['REMOTE_ADDR']) {
+      error_log("The pinserver module found an ip-mismatch comparing url IP {$values['ip']} to remote address {$_SERVER['REMOTE_ADDR']} ");
+      $values['errors'][] = 'ip-mismatch';
+    }
+  }
+
+  // Verify time parameter is not longer than 2 minutes old.
+  // The PHP abs() function converts integers to absolute values (unsigned).
+  // Subtract timestamp value sent by PIN server from the current time (on web server)
+  // 120 equals 2 minutes; could change this to 60 but no more than 180
+  $elapsed = abs($values['time'] - time());
+  if ($elapsed > 120) {
+    $values['errors'][] = "time-elapsed-$elapsed";
+  }
+
+  return $values;
+}
+
+/**
+ * Checks system settings
+ *
+ * return bool|string $error
+ *   Returns FALSE for no error, otherwise an error message string.
+ */
+function pinserver_check_system_settings() {
+
+  // Lists configuration parameters to verify.
+  $settings = array('pinserver_pin_url',
+    'pinserver_landing_path',
+    'pinserver_auth_str',
+    'pinserver_gpg_dir',
+    'pinserver_gpg_bin',
+    'pinserver_error_logging_enabled',
+  );
+
+  $missing_settings = array();
+  $error = FALSE;
+
+  // Checks to see if all settings are set.
+  foreach ($settings as $key) {
+    if (variable_get($key) == '') {
+      $missing_settings[] = $key;
+    }
+  }
+
+  if (count($missing_settings)) {
+    $error .= 'Pinserver is missing required system settings: ' . implode(' ', $missing_settings) . '. ';
+  }
+  if (!is_dir(variable_get('pinserver_gpg_dir'))) {
+    $error .= 'The system path for gpg_dir directory is invalid or does not exist. ';
+  }
+
+  if (!is_file(variable_get('pinserver_gpg_bin')) || !is_executable(variable_get('pinserver_gpg_bin'))) {
+    $error .= 'The gpg_bin file does not exist or is not executable. ';
+  }
+
+  return $error;
+}
+
+/**
+ * Logs error and displays message
+ *
+ * @param string $type
+ *   Message type to display
+ * @param string $values
+ *   Comma-separated list of errors encountered
+ */
+function pinserver_error($type, $values) {
+  switch ($type) {
+    case 'token':
+      // Logs the errors
+      error_log("The pinserver module has errored in processing the token in the following categories: $values");
+      return theme('pinserver_token_error', explode(',', $values));
+
+    default:
+      return '';
+  }
+}
+
+/**
+ * theme_pinserver_token_error()
+ *
+ * @param array $values
+ *   All errors that occured due to a problem with the token or token processing.
+ */
+function theme_pinserver_token_error($values = NULL) {
+  $message = '<p>' . t('Communication with the @harvard PIN server failed.', array('@harvard' => 'Harvard'));
+  if (in_array('ip-mismatch', $values)) {
+    $message .= t(' Note: Use of a VPN or tunnel connection may cause problems with PIN authentication.');
+  }
+  $message .= t(' Please !try_again', array('!try_again' => l(t('try again'), variable_get('pinserver_pin_url') . '?__authen_application=' . variable_get('pinserver_app_name'))));
+  if (valid_email_address(variable_get('pinserver_support_contact'))) {
+    $message .= t(' or !contact_us', array('!contact_us' => '<a href=mailto:' . variable_get('pinserver_support_contact') . '>' . t('contact us') . '</a>'));
+  }
+  $message .= '.</p>';
+  return $message;
+}
+
+/**
+ * Menu callback for 'pinserver/forbidden'; displays 403 Forbidden error message.
+ */
+function pinserver_forbidden_page() {
+  drupal_access_denied();
+  die();
+}
