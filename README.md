@@ -26,7 +26,7 @@ Manager (Harvard PIN API version 3).
 
 For more information about developing with PIN, see the
 [Harvard PIN Customer Guide](http://reference.pin.harvard.edu/dev-overview)
-or the Harvard PIN2 Developer Resources [PDF](http://reference.pin.harvard.edu/sites/reference.pin.harvard.edu/files/PIN2%20Developer%20Resources.pdf)
+or the Harvard PIN2 [Developer Resources PDF](http://reference.pin.harvard.edu/sites/reference.pin.harvard.edu/files/PIN2%20Developer%20Resources.pdf)
 
 ## Contribute
 
