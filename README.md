@@ -34,7 +34,6 @@ or the Harvard PIN2 [Developer Resources PDF](http://reference.pin.harvard.edu/s
 * Submit a bug or ask for support at our [issue queue](https://github.com/openscholar/pinserver/issues)
 * Contribute with bug fixes and new features by sending us pull requests
 
-http://drupal.org/node/70151
 
 ## Credits
 
