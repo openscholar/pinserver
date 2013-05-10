@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * @file
+ * Code for Harvard PIN Example: Authentication
+ *
+ * @todo add admin form with options "off", "optional" or "required" PIN.
+ * @todo conditionally redirect to pin in hook_menu_alter
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function hupin_example_user_menu() {
+  $items = array();
+
+//  $items['admin/config/hupin_example_user'] = array(
+//    'title' => 'Harvard PIN Authentication',
+//    'description' => 'Administer user authentication with Harvard PIN',
+//    'access arguments' => array('administer site configuration'),
+//    'page callback' => 'system_settings_form',
+//    'page arguments' => array(),
+//    'type' => MENU_CALLBACK,
+//    // @todo file & admin settings callback
+//  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function hupin_example_user_menu_alter(&$items) {
+  //$items['user'] = array();
+}

@@ -1,0 +1,4 @@
+name = Harvard PIN Example: Authentication
+description = Implements user authentication with Harvard University PIN system.
+core = 7.x
+configure = admin/config/hupin_example_user
