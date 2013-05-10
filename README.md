@@ -1,8 +1,9 @@
-# Harvard PIN
-
-A drupal 7 module
-
 ## About
+
+A Drupal module that servers as an interface between [Harvard University PIN system](http://www.pin.harvard.edu/)
+and Drupal applications / websites. The purpose of this module is to encapsulate low level details of
+PIN and provide and set of APIs for drupal developers.
+
 
 Provides developer API for the
 [Harvard University PIN system](http://www.pin.harvard.edu/). Similar to
@@ -11,14 +12,9 @@ exclusive Harvard-only websites or services, based on the public-private-key
 based PGP, OpenPGP or GPG standard. This module handles low-level details of
 Harvard PIN for Drupal integration.
 
-The module was developed for the [OpenScholar](http://openscholar.harvard.edu)
-Drupal profile (distribution). However, the module does not depend on
-OpenScholar or any non-core module, and can be used in any Drupal 7 site.
+The module was developed for and it's part of [OpenScholar](http://openscholar.harvard.edu)
+distribution but does not depend on OpenScholar and can be used in any Drupal installation.
 
-Some possible applications for this module are:
-
-* Protected content; restrict certain nodes to only allow Harvard PIN access
-* Harvard PIN user authentication; only allow users to log in with Harvard PIN.
 
 ## Install
 
@@ -44,13 +40,15 @@ or the Harvard PIN2 Developer Resources PDF](http://reference.pin.harvard.edu/si
 
 * Write help and docs in our [wiki](https://github.com/openscholar/pinserver/wiki)
 * Submit a bug or ask for support at our [issue queue](https://github.com/openscholar/pinserver/issues)
-* Contribute with bug fixes and new features by sending us pull requests  
+* Contribute with bug fixes and new features by sending us pull requests
+
+http://drupal.org/node/70151
 
 ## Credits
 
 Joe Weiner [@jjweiner](https://github.com/jjweiner), Richard Brandon [@rbran100](https://github.com)
 , Shane Dupree [@shanedupree](https://github.com/shanedupree), 
-Oren Robinson [@baisong](https://github.com/baisong) Seth Gregory, Blaise Freeman, 
+Oren Robinson [@baisong](https://github.com/baisong), Seth Gregory, Blaise Freeman,
 Ferdi Alimadhi [@Ferdi](https://github.com/Ferdi) for their contribution with code and/or ideas.
 
 Special thanks to [IQSS](http://iq.harvard.edu) and [HWP](http://hwp.harvard.edu) for supporting our work.
