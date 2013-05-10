@@ -1,4 +1,4 @@
-name = Harvard PIN
+name = Pinserver
 description = Provides developer API for the Harvard University PIN system.
 core = 7.x
 configure = admin/settings/pinserver
