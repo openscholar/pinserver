@@ -104,7 +104,7 @@ function pinserver_check_user() {
     drupal_goto();
   }
 
-  if (isset($_GET['tk_forward']) && isset($_GET['redirect'])) {
+  if ($_GET['tk_forward'] && isset($_GET['redirect'])) {
     drupal_goto(ltrim($_GET['redirect'], '/'),array('query' => drupal_get_query_parameters(NULL,array('q','tk_forward','redirect'))));
   }
 
@@ -432,7 +432,7 @@ function pinserver_check_token() {
   */
 
   // Verify application name.
-  if ($values['app'] != variable_get('pinserver_app_name')) {
+  if (isset($values['app']) && $values['app'] != variable_get('pinserver_app_name')) {
     $values['errors'][] = 'name';
   }
 
@@ -449,7 +449,7 @@ function pinserver_check_token() {
   // Subtract timestamp value sent by PIN server from the current time (on web server)
   // 120 equals 2 minutes; could change this to 60 but no more than 180
   $elapsed = abs($values['time'] - time());
-  if ($elapsed > 120) {
+  if ($values['time'] && $elapsed > 120) {
     $values['errors'][] = "time-elapsed-$elapsed";
   }
 
