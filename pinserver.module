@@ -195,9 +195,14 @@ function pinserver_prepare_pin_v1_token() {
   // User ID is returned as a hash for safer storage.
   $values['user_id'] = (variable_get('pinserver_hash_huid') == '1') ? md5($user_id) : $user_id;
 
-  // Time must be converted into unix timestamp.
-  $exploded_time = explode(" ", $time);
-  $values['time'] = strtotime($exploded_time[1] . " " . $exploded_time[2] . " " . $exploded_time[5] . " " . $exploded_time[3]);
+  // Time must be converted into timezone-sensitive unix timestamp.
+  // Original value like "Tue Jul 09 16:50:24 EDT 2013"
+  // Explodes the string by " " to access individual parts.
+  $parts = explode(" ", $time);
+  $timezone = $parts[4];
+  $datestring = implode(' ', array($parts[1], $parts[2], $parts[5], $parts[3]));
+  $datetime = new DateTime($datestring, new DateTimeZone($timezone));
+  $values['time'] = $datetime->getTimestamp();
 
   // Client IP is returned as is.
   $values['ip'] = $ip;
@@ -444,17 +449,12 @@ function pinserver_check_token() {
     }
   }
 
-  // Verify time parameter is not longer than 2 minutes old.
-  // The PHP abs() function converts integers to absolute values (unsigned).
-  // Subtract timestamp value sent by PIN server from the current time (on web server)
-  // Sets 3 minutes as the maximum allowed time difference.
+  // Verifies the time parameter is not longer than 3 minutes old.
   $limit = 60 * 3;
-  // Gets the offset in comparison to UTC in seconds using date().
-  $utc_offset = date('Z');
   // Compares the authenticated time to the current time to get elapsed time.
   $auth_time = $values['time'];
   $curr_time = time();
-  $elapsed = $curr_time - $auth_time + $utc_offset;
+  $elapsed = $curr_time - $auth_time;
   
   // If the difference adjusted for timezone into account is over the limit...
   if ($auth_time && $elapsed > $limit) {
