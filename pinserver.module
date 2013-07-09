@@ -452,12 +452,10 @@ function pinserver_check_token() {
   // Verifies the time parameter is not longer than 3 minutes old.
   $limit = 60 * 3;
   // Compares the authenticated time to the current time to get elapsed time.
-  $auth_time = $values['time'];
-  $curr_time = time();
-  $elapsed = $curr_time - $auth_time;
+  $elapsed = abs($values['time'] - time());
   
   // If the difference adjusted for timezone into account is over the limit...
-  if ($auth_time && $elapsed > $limit) {
+  if ($values['time'] && $elapsed > $limit) {
     // Adds elapsed time as an error token visible in the URL if user is
     // redirected to the error page.
     $values['errors'][] = "time-elapsed-$elapsed";
