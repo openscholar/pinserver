@@ -447,10 +447,19 @@ function pinserver_check_token() {
   // Verify time parameter is not longer than 2 minutes old.
   // The PHP abs() function converts integers to absolute values (unsigned).
   // Subtract timestamp value sent by PIN server from the current time (on web server)
-  // 120 equals 2 minutes; could change this to 60 but no more than 180
-  // This was 24min etc on some valid pin calls, and was causing issues, temp fix to 60 min
-  $elapsed = abs($values['time'] - time());
-  if ($values['time'] && $elapsed > (60 * 250)) {
+  // Sets 3 minutes as the maximum allowed time difference.
+  $limit = 60 * 3;
+  // Gets the offset in comparison to UTC in seconds using date().
+  $utc_offset = date('Z');
+  // Compares the authenticated time to the current time to get elapsed time.
+  $auth_time = $values['time'];
+  $curr_time = time();
+  $elapsed = $curr_time - $auth_time + $utc_offset;
+  
+  // If the difference adjusted for timezone into account is over the limit...
+  if ($auth_time && $elapsed > $limit) {
+    // Adds elapsed time as an error token visible in the URL if user is
+    // redirected to the error page.
     $values['errors'][] = "time-elapsed-$elapsed";
   }
 
