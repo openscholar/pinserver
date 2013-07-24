@@ -60,16 +60,24 @@ function pinserver_authenticate_user_create() {
 
 
   $output['login'] = array(
-    '#markup' => t('Login with your existing account to link it with your PIN.')
+    '#prefix' => '<span id="pin-login">',
+    '#markup' => l('Login with your existing account to link it with your PIN.', 'user/login'),
+    '#suffix' => '</span>'
   );
 
   $output['new_site'] = array(
-    '#markup' => t('Create a OpenScholar site and account for this PIN')
+    '#prefix' => '<span id="pin-register">',
+    '#markup' => l('Create a OpenScholar site and account for this PIN', 'site/register'),
+    '#suffix' => '</span>'
   );
 
   $output['nevermind'] = array(
-    '#markup' => t('Do nothing and return to where you were.')
+    '#prefix' => '<span id="pin-nvm">',
+    '#markup' => l('Do nothing and return to where you were.', $_GET['destination']),
+    '#suffix' => '</span>'
   );
+
+  return $output;
 }
 
 function pinserver_authenticate_user_create_form_submit($form, &$form_state) {

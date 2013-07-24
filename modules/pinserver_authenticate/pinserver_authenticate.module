@@ -31,7 +31,7 @@ function pinserver_authenticate_menu() {
  */
 function pinserver_authenticate_user_login_access() {
   if (user_is_logged_in()) {
-    drupal_goto('user');
+    return false;
   }
 
   return true;
@@ -39,10 +39,11 @@ function pinserver_authenticate_user_login_access() {
 
 function pinserver_authenticate_menu_local_tasks_alter(&$data, $router_item, $root_path) {
   if ($root_path == 'user') {
- $tabs = &$data['tabs'][0]['output'];
+    $tabs = &$data['tabs'][0]['output'];
     foreach ($tabs as $k => $t) {
       if ($t['#link']['path'] == 'user/pin') {
         $tabs[$k]['#link']['localized_options']['query'] = drupal_get_destination();
+        $tabs[$k]['#link']['access'] = !pinserver_get_user_huid();
       }
     }
   }
@@ -71,4 +72,15 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
       'uid' => $uid
     ))
     ->execute();
+}
+
+/**
+ * Associates a PIN with a user
+ */
+function pinserver_authenticate_user_login(&$user) {
+  if ($huid = pinserver_get_user_huid()) {
+    if (!pinserver_authenticate_get_uid_from_huid($huid)) {
+      pinserver_authenticate_set_user_huid($user->uid, $huid);
+    }
+  }
 }
