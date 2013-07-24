@@ -1,0 +1,44 @@
+<?php
+
+function pinserver_authenticate_schema() {
+  $schema['pinserver_users'] = array(
+    'description' => t('Maps unique encrypted HUID identifier to Drupal User ID'),
+    'fields' => array(
+      'uid' => array(
+        'description' => t('Drupal user ID'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'huid' => array(
+        'description' => t("Holds the Harvard ID of returning users"),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'reg_time' => array(
+        'description' => t("The time of user registration"),
+        'type' => 'int',
+      ),
+    ),
+    'unique keys' => array(
+      'huid' =>array('huid'),
+    ),
+    'primary key' => array( 'uid') ,
+  );
+  return $schema;
+}
+
+function pinserver_authenticate_install() {
+  if (db_table_exists('os_pinserver')) {
+    $q = db_select('os_pinserver', 'op')
+      ->fields('op')
+      ->execute();
+
+    foreach ($q as $r) {
+      drupal_write_record('pinserver_users', $r);
+    }
+    db_drop_table('os_pinserver');
+  }
+}

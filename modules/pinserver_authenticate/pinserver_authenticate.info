@@ -1,0 +1,5 @@
+name = "Pinserver Authentication"
+core = 7.x
+description = "Allows users to log in using only their PIN"
+
+dependencies[] = pinserver
