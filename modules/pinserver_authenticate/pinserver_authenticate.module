@@ -11,7 +11,7 @@ function pinserver_authenticate_menu() {
     'page callback' => 'pinserver_authenticate_pin_user_login',
     'access callback' => 'pinserver_authenticate_user_login_access',
     'type' => MENU_LOCAL_TASK,
-    'file' => 'includes/pinserver_authenticate.pages.inc',
+    'file' => 'pinserver_authenticate.pages.inc',
   );
 
   $items['user/pin/create'] = array(
