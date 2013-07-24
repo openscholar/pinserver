@@ -32,13 +32,16 @@ function pinserver_authenticate_schema() {
 
 function pinserver_authenticate_install() {
   if (db_table_exists('os_pinserver')) {
-    $q = db_select('os_pinserver', 'op')
-      ->fields('op')
-      ->execute();
-
-    foreach ($q as $r) {
-      drupal_write_record('pinserver_users', $r);
-    }
-    db_drop_table('os_pinserver');
+    db_rename_table('os_pinserver', 'pinserver_users');
   }
+  elseif (db_table_exists('iqss_pinserver_register')) {
+    db_rename_table('iqss_pinserver_register', 'pinserver_users');
+  }
+  else {
+    drupal_install_schema('pinserver_authenticate');
+  }
+}
+
+function pinserver_authenticate_uninstall() {
+  db_drop_table('pinserver_users');
 }
