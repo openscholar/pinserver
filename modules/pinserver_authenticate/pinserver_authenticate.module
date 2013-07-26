@@ -66,12 +66,18 @@ function pinserver_authenticate_get_uid_from_huid($huid = NULL) {
 }
 
 function pinserver_authenticate_set_user_huid($uid, $huid) {
-  db_insert('pinserver_users')
-    ->fields(array(
-      'huid' => $huid,
-      'uid' => $uid
-    ))
-    ->execute();
+  try {
+    db_insert('pinserver_users')
+      ->fields(array(
+        'huid' => $huid,
+        'uid' => $uid
+      ))
+      ->execute();
+    return true;
+  }
+  catch (Exception $e) {
+    return false;
+  }
 }
 
 /**
