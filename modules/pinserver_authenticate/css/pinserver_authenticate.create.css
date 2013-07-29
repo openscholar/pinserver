@@ -1,0 +1,30 @@
+.pin-button {
+  display: inline-block;
+  width: 100%;
+  border-radius: 5px;
+  background-color: lightgreen;
+  color: white;
+  margin: 10px 0;
+}
+
+.pin-button:hover {
+  background-color: darkgreen;
+}
+
+.pin-button a {
+  display: block;
+  padding: 5px;
+  color: black !important;
+}
+
+.pin-button:hover a {
+  color: white !important;
+}
+
+.not-logged-in.page-user #columns #main-content h1#page-title {
+  margin-bottom: 1em !important;
+}
+
+#footer .footer-login {
+  display: none !important;
+}
