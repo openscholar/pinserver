@@ -18,7 +18,7 @@ function pinserver_authenticate_menu() {
     'title' => 'Create user from PIN',
     'page callback' => 'pinserver_authenticate_user_create',
     'access callback' => 'pinserver_authenticate_user_login_access',
-    'file' => 'includes/pinserver_authenticate.pages.inc',
+    'file' => 'pinserver_authenticate.pages.inc',
   );
 
   return $items;
