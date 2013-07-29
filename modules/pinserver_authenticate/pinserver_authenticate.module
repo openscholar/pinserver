@@ -89,7 +89,7 @@ function pinserver_authenticate_user_login(&$user) {
     drupal_set_message('their PIN is '.$huid);
     if (!pinserver_authenticate_get_uid_from_huid($huid)) {
       drupal_set_message('No one with this PIN registered. Adding them to system.');
-      pinserver_authenticate_set_user_huid($user->uid, $huid);
+      pinserver_authenticate_set_user_huid($user['uid'], $huid);
     }
   }
 }
