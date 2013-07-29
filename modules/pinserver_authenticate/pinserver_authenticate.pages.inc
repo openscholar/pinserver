@@ -17,7 +17,7 @@ function pinserver_authenticate_pin_user_login() {
     drupal_set_message('Unable to connect to pinserver. Contact your site administrator.', 'error');
     drupal_goto('user');
   }
-  elseif (!pinserver_authenticate_user() && !pinserver_get_user_huid()) {
+  elseif (!pinserver_get_user_huid()) {
     $url = 'user/pin';
     $options = array(
       'absolute' => TRUE,
