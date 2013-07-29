@@ -140,6 +140,7 @@ function pinserver_authenticate_user($use_session = FALSE){
 
   // Parses and validates the PIN token.
   $token_data = pinserver_check_token();
+  error_log(print_r($token_data,1));
 
   // Redirects to error page if any errors are returned.
   if (is_array($token_data) && isset($token_data['errors']) && count($token_data['errors']) > 0) {
