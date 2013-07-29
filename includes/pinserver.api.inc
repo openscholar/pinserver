@@ -52,13 +52,14 @@ function pinserver_is_harvard_employee() {
 function pinserver_get_user($user = false, $set_session = false) {
   $pin_user = &drupal_static(__FUNCTION__);
 
-  if($user){
+  if ($user) {
     $pin_user = $user;
 
-    if(isset($_SESSION['pinserver']) || $set_session){
+    if (isset($_SESSION['pinserver']) || $set_session) {
       $_SESSION['pinserver'] = $user;
     }
-  }elseif (empty($pin_user) && $_SESSION['pinserver']){
+  }
+  elseif (empty($pin_user) && !empty($_SESSION['pinserver'])) {
     $pin_user = $_SESSION['pinserver'];
   }
 

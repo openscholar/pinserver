@@ -104,7 +104,7 @@ function pinserver_check_user() {
     drupal_goto();
   }
 
-  if ($_GET['tk_forward'] && isset($_GET['redirect'])) {
+  if (!empty($_GET['tk_forward']) && isset($_GET['redirect'])) {
     drupal_goto(ltrim($_GET['redirect'], '/'),array('query' => drupal_get_query_parameters(NULL,array('q','tk_forward','redirect'))));
   }
 
