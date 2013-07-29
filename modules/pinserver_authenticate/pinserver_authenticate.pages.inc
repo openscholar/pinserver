@@ -28,7 +28,13 @@ function pinserver_authenticate_pin_user_login() {
     }
     $url = url($url, $options);
     drupal_set_message($url);
-    pinserver_redirect(array('redirect' => $url));
+    // pinserver_redirect(array('redirect' => $url));
+    $args['__authen_application'] = variable_get('pinserver_app_name');
+    $redirect_url = url(variable_get('pinserver_pin_url'),array('query' => $args));
+    $output = array(
+      '#markup' => '<a href="'.$redirect_url.'">Click to login.</a>'
+    );
+    return $output;
   }
   elseif ($uid = pinserver_authenticate_get_uid_from_huid(pinserver_get_user_huid())) {
     $GLOBALS['user'] = user_load($uid);
