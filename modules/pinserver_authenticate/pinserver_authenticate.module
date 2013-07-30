@@ -1,8 +1,31 @@
 <?php
 /**
  * Functions and APIs for logging in a user via pinserver
+ *
+ * PIN workflow:
+ * anonymous user visits user -> user/pin -> pinserver -> PIN has user account -> redirect to $destination
+ *                                                     -> PIN has no account
+ *                                                            V
+ *                                    -----------------------------------------------------------------
+ *                                   V                                      V                         V
+ *                              User wants to link account      User wants to create site        User wants to cancel
+ *                                   V                                     V                           V
+ *                             user/login                        site/register                user/pin/cancel
+ *                                   V                                    V                            V
+ *                              User logs in                     User creates site                Clear pin session
+ *                                   V                                    V                            V
+ *                              Link PIN with UID               Link PIN with new UID              Redirect to $destination
+ *                                   V                                    V                            |
+ *                           Redirect to $destination           Redirect to site                       |
+ *                                   |                                    |                            |
+ *                                   --------------------------------|  Done  |-------------------------
+ *
+ * Authenticated users cannot access user/pin.
  */
 
+/**
+ * Implements hook_menu().
+ */
 function pinserver_authenticate_menu() {
   $items = array();
 
@@ -32,8 +55,8 @@ function pinserver_authenticate_menu() {
 }
 
 /**
- * Redirect user to /user if they are already logged in
- * and they have already filled out the required new user form
+ * Refuse access to users that have authenticated.
+ * Because that makes no sense.
  * @return bool
  */
 function pinserver_authenticate_user_login_access() {
@@ -44,13 +67,20 @@ function pinserver_authenticate_user_login_access() {
   return true;
 }
 
+/**
+ * Implements hook_menu_local_tasks_alter().
+ *
+ * Removes the PIN login button if they've already logged in to PIN.
+ * They are redirected to user/login after authing with PIN if they've elected
+ * to link an existing account to this PIN. We don't present them with the
+ * Login via PIN link in this case
+ */
 function pinserver_authenticate_menu_local_tasks_alter(&$data, $router_item, $root_path) {
   if ($root_path == 'user') {
     $tabs = &$data['tabs'][0]['output'];
     foreach ($tabs as $k => $t) {
       if ($t['#link']['path'] == 'user/pin') {
         $tabs[$k]['#link']['localized_options']['query'] = drupal_get_destination();
-        $tabs[$k]['#link']['access'] = !pinserver_get_user_huid();
         if (pinserver_get_user_huid()) {
           unset($tabs[$k]);
         }
@@ -59,6 +89,9 @@ function pinserver_authenticate_menu_local_tasks_alter(&$data, $router_item, $ro
   }
 }
 
+/**
+ * Given a PIN, get the user's UID or false
+ */
 function pinserver_authenticate_get_uid_from_huid($huid = NULL) {
   if (!$huid){
     $huid = pinserver_get_user_huid();
@@ -75,6 +108,9 @@ function pinserver_authenticate_get_uid_from_huid($huid = NULL) {
   return FALSE;
 }
 
+/**
+ * Links a PIN and UID together
+ */
 function pinserver_authenticate_set_user_huid($uid, $huid) {
   try {
     db_insert('pinserver_users')
@@ -87,21 +123,21 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
     return true;
   }
   catch (Exception $e) {
-    drupal_set_message('Error linking HUID with UID');
+    drupal_set_message('Error linking HUID with OpenScholar account');
     error_log($e->getMessage());
     return false;
   }
 }
 
 /**
- * Associates a PIN with a user
+ * Implements hook_user_login().
+ *
+ * Associates the active PIN user with the Drupal user that was just logged in to.
+ * Only does this is there is a PIN user and no linkage has been established already
  */
 function pinserver_authenticate_user_login(&$user, $account) {
-  drupal_set_message('logging in user');
   if ($huid = pinserver_get_user_huid()) {
-    drupal_set_message('their PIN is '.$huid);
     if (!pinserver_authenticate_get_uid_from_huid($huid)) {
-      drupal_set_message('No one with this PIN registered. Adding them to system.');
       pinserver_authenticate_set_user_huid($account->uid, $huid);
     }
   }

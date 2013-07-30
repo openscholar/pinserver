@@ -1,22 +1,26 @@
 <?php
 
 /**
- * Redirects to pinserver if they are not logged in
- * Prompts to
+ * Routing function
+ *
+ * See flowchart in pinserver_authenticate.module.com
  */
 function pinserver_authenticate_pin_user_login() {
+  // Auth error
   if ($errors = pinserver_get_errors()) {
     foreach ($errors as $e) {
       watchdog(WATCHDOG_ERROR, t('Pinserver authentication error: @error', array('@error' => $e)));
       error_log(t('Pinserver authentication error: @error', array('@error' => $e)));
     }
   }
+  // System confic error
   if ($error = pinserver_check_system_settings()) {
     watchdog(WATCHDOG_ERROR, t('Pinserver connection error: @error', array('@error' => $error)));
     error_log(t('Pinserver connection error: @error', array('@error' => $error)));
     drupal_set_message('Unable to connect to pinserver. Contact your site administrator.', 'error');
     drupal_goto('user');
   }
+  // Not logged in
   elseif (!pinserver_get_user_huid()) {
     $url = 'user/pin';
     $options = array(
@@ -28,18 +32,14 @@ function pinserver_authenticate_pin_user_login() {
     }
     $url = url($url, $options);
     pinserver_redirect(array('redirect' => $url));
-    $args['__authen_application'] = variable_get('pinserver_app_name');
-    $redirect_url = url(variable_get('pinserver_pin_url'),array('query' => $args));
-    $output = array(
-      '#markup' => '<a href="'.$redirect_url.'">Click to login.</a>'
-    );
-    return $output;
   }
+  // Given PIN has a user linked to it
   elseif ($uid = pinserver_authenticate_get_uid_from_huid(pinserver_get_user_huid())) {
     $GLOBALS['user'] = user_load($uid);
     user_login_finalize();
     drupal_goto('user');
   }
+  // Given PIN has no user linked to it
   else {
     // Users needs to create a full account to continue further
     if (isset($_GET['destination'])) {
@@ -54,7 +54,8 @@ function pinserver_authenticate_pin_user_login() {
 }
 
 /**
- * Allows user to fill in the rest of their user account
+ * Page for PIN users that have no Drupal account linked for this pin
+ * Gives them 3 choices of what to do when
  */
 function pinserver_authenticate_user_create() {
   $output = array(
@@ -99,6 +100,7 @@ function pinserver_authenticate_user_create() {
 
 /**
  * Clears the PIN session so this PIN isn't accidentally linked with an account later
+ * Then sends them back to where they were, or user, if they were nowhere.
  */
 function pinserver_authenticate_cancel() {
   pinserver_remove_session();
