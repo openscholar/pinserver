@@ -21,6 +21,13 @@ function pinserver_authenticate_menu() {
     'file' => 'pinserver_authenticate.pages.inc',
   );
 
+  $items['user/pin/cancel'] = array(
+    'title' => 'Cancel op',
+    'page callback' => 'pinserver_authenticate_cancel',
+    'access callback' => TRUE,
+    'file' => 'pinserver_authenticate.pages.inc'
+  );
+
   return $items;
 }
 
@@ -73,14 +80,15 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
     db_insert('pinserver_users')
       ->fields(array(
         'huid' => $huid,
-        'uid' => $uid
+        'uid' => $uid,
+        'reg_time' => REQUEST_TIME,
       ))
       ->execute();
     return true;
   }
   catch (Exception $e) {
     drupal_set_message('Error linking HUID with UID');
-    drupal_set_message(print_r($e,1));
+    error_log($e->getMessage());
     return false;
   }
 }

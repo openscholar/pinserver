@@ -69,7 +69,6 @@ function pinserver_authenticate_user_create() {
     '#markup' => t('Sorry, but we don\'t have an OpenScholar account associated with your PIN.<br />')
   );
 
-
   $output['login'] = array(
     '#prefix' => '<span id="pin-login" class="pin-button">',
     '#markup' => l('Login with your existing account to link it with your PIN.', 'user/login'),
@@ -82,30 +81,26 @@ function pinserver_authenticate_user_create() {
     '#suffix' => '</span>'
   );
 
+  $query = array(
+    'destination' => 'user'
+  );
+  if (isset($_GET['destination'])) {
+    $query['destination'] = $_GET['destination'];
+  }
+
   $output['nevermind'] = array(
     '#prefix' => '<span id="pin-nvm" class="pin-button">',
-    '#markup' => l('Do nothing and return to where you were.', $_GET['destination']),
+    '#markup' => l('Do nothing and return to where you were.', 'user/pin/cancel', array('query' => $query)),
     '#suffix' => '</span>'
   );
 
   return $output;
 }
 
-function pinserver_authenticate_user_create_form_submit($form, &$form_state) {
-  module_load_include('inc', 'os', 'includes/user');
-  $values = $form_state['values'];
-
-  $user_options = array(
-    'name' => $values['name'],
-    'pass' => $values['password'],
-    'mail' => $values['mail'],
-    'status' => 1,
-    'field_first_name' => $values['first_name'],
-    'field_last_name' => $values['last_name'],
-  );
-  $user = os_user_create($user_options);
-  pinserver_authenticate_set_user_huid($user->uid, pinserver_get_user_huid());
-
-  $GLOBALS['user'] = $user;
-  user_login_finalize();
+/**
+ * Clears the PIN session so this PIN isn't accidentally linked with an account later
+ */
+function pinserver_authenticate_cancel() {
+  pinserver_remove_session();
+  drupal_goto('user');
 }
