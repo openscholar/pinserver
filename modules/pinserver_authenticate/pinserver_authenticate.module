@@ -44,6 +44,9 @@ function pinserver_authenticate_menu_local_tasks_alter(&$data, $router_item, $ro
       if ($t['#link']['path'] == 'user/pin') {
         $tabs[$k]['#link']['localized_options']['query'] = drupal_get_destination();
         $tabs[$k]['#link']['access'] = !pinserver_get_user_huid();
+        if (pinserver_get_user_huid()) {
+          unset($tabs[$k]);
+        }
       }
     }
   }
@@ -76,6 +79,8 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
     return true;
   }
   catch (Exception $e) {
+    drupal_set_message('Error linking HUID with UID');
+    drupal_set_message(print_r($e,1));
     return false;
   }
 }
@@ -89,7 +94,9 @@ function pinserver_authenticate_user_login(&$user) {
     drupal_set_message('their PIN is '.$huid);
     if (!pinserver_authenticate_get_uid_from_huid($huid)) {
       drupal_set_message('No one with this PIN registered. Adding them to system.');
-      pinserver_authenticate_set_user_huid($user['uid'], $huid);
+      if (!pinserver_authenticate_set_user_huid($user['uid'], $huid)) {
+        drupal_set_message()
+      }
     }
   }
 }
