@@ -30,8 +30,18 @@ function pinserver_authenticate_pin_user_login() {
       $options['query']['destination'] = $_GET['destination'];
       unset($_GET['destination']);
     }
+    $pin_options = array(
+      'redirect' => $url,
+    );
+    if ($GLOBALS['base_url'] != variable_get('purl_base_domain', $GLOBALS['base_url'])) {
+      $url = url('pinserver/auth', array('query' => array('redirect' => $url), 'absolute' => TRUE));
+      $pin_options = array(
+        'redirect' => $url,
+        'tk_forward' => 1
+      );
+    }
     $url = url($url, $options);
-    pinserver_redirect(array('redirect' => $url));
+    pinserver_redirect($pin_options);
   }
   // Given PIN has a user linked to it
   elseif ($uid = pinserver_authenticate_get_uid_from_huid(pinserver_get_user_huid())) {
