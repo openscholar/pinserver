@@ -113,10 +113,10 @@ function pinserver_authenticate_get_uid_from_huid($huid = NULL) {
  */
 function pinserver_authenticate_set_user_huid($uid, $huid) {
   try {
-    db_insert('pinserver_users')
+    db_merge('pinserver_users')
+      ->key(array('uid' => $uid))
       ->fields(array(
         'huid' => $huid,
-        'uid' => $uid,
         'reg_time' => REQUEST_TIME,
       ))
       ->execute();
