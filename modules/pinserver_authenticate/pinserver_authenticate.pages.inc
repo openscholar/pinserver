@@ -30,6 +30,7 @@ function pinserver_authenticate_pin_user_login() {
       $options['query']['destination'] = $_GET['destination'];
       unset($_GET['destination']);
     }
+    $url = url($url, $options);
     $pin_options = array(
       'redirect' => $url,
     );
@@ -40,7 +41,6 @@ function pinserver_authenticate_pin_user_login() {
         'tk_forward' => 1
       );
     }
-    $url = url($url, $options);
     pinserver_redirect($pin_options);
   }
   // Given PIN has a user linked to it
