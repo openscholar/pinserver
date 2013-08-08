@@ -76,13 +76,20 @@ function pinserver_authenticate_user_create() {
     )
   );
 
+  $query = array(
+    'destination' => 'user'
+  );
+  if (isset($_GET['destination'])) {
+    $query['destination'] = $_GET['destination'];
+  }
+
   $output['notice'] = array(
     '#markup' => t('Sorry, but we don\'t have an OpenScholar account associated with your PIN.<br />')
   );
 
   $output['login'] = array(
     '#prefix' => '<span id="pin-login" class="pin-button">',
-    '#markup' => l('Login with your existing account to link it with your PIN.', 'user/login'),
+    '#markup' => l('Login with your existing account to link it with your PIN.', 'user/login', array('query' => $query)),
     '#suffix' => '</span>'
   );
 
@@ -91,13 +98,6 @@ function pinserver_authenticate_user_create() {
     '#markup' => l('Create a OpenScholar site and account for this PIN', 'site/register'),
     '#suffix' => '</span>'
   );
-
-  $query = array(
-    'destination' => 'user'
-  );
-  if (isset($_GET['destination'])) {
-    $query['destination'] = $_GET['destination'];
-  }
 
   $output['nevermind'] = array(
     '#prefix' => '<span id="pin-nvm" class="pin-button">',
