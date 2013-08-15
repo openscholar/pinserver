@@ -98,9 +98,12 @@ function pinserver_authenticate_get_uid_from_huid($huid = NULL) {
   }
 
   if ($huid) {
+    $or = db_or()
+      ->condition('huid', $huid)
+      ->condition('hashID', $huid);
     return db_select('pinserver_users', 'pu')
       ->fields('pu', array('uid'))
-      ->condition('huid', $huid)
+      ->condition($or)
       ->execute()
       ->fetchField();
   }
@@ -112,13 +115,20 @@ function pinserver_authenticate_get_uid_from_huid($huid = NULL) {
  * Links a PIN and UID together
  */
 function pinserver_authenticate_set_user_huid($uid, $huid) {
+  $fields = array(
+    'reg_time' => REQUEST_TIME
+  );
+  if (strlen($huid) > 10) {
+    $fields['hashID'] = $huid;
+  }
+  else {
+    $fields['huid'] = $huid;
+  }
+
   try {
     db_merge('pinserver_users')
       ->key(array('uid' => $uid))
-      ->fields(array(
-        'huid' => $huid,
-        'reg_time' => REQUEST_TIME,
-      ))
+      ->fields($fields)
       ->execute();
     return true;
   }
