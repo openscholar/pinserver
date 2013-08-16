@@ -5,7 +5,7 @@
  *
  * Allows for login via PIN to be the default action of /user
  */
-function pinserver_authenticate_user_login() {
+function pinserver_authenticate_default_user_login() {
   global $user;
   module_load_include('pages.inc', 'user');
 

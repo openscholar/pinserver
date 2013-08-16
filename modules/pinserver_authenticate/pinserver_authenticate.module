@@ -58,7 +58,7 @@ function pinserver_authenticate_menu() {
  * Impleemnts hook_menu_alter().
  */
 function pinserver_authenticate_menu_alter(&$items) {
-  $items['user']['page callback'] = 'pinserver_authenticate_user_login';
+  $items['user']['page callback'] = 'pinserver_authenticate_default_user_login';
   $items['user']['file'] = 'pinserver_authenticate.pages.inc';
   $items['user']['file path'] = drupal_get_path('module', 'pinserver_authenticate');
 }
@@ -97,12 +97,6 @@ function pinserver_authenticate_menu_local_tasks_alter(&$data, $router_item, $ro
       }
     }
   }
-}
-
-function pinserver_authenticate_menu_get_item_alter(&$router_item, $path, $original_map) {
-  dpm($router_item);
-  dpm($path);
-
 }
 
 /**
@@ -167,4 +161,27 @@ function pinserver_authenticate_user_login(&$user, $account) {
       pinserver_authenticate_set_user_huid($account->uid, $huid);
     }
   }
+}
+
+/**
+ * Implements hook_cp_settings().
+ *
+ * Adds ability for a vsite to make PIN authentication the default
+ */
+function pinserver_authenticate_cp_settings() {
+  $setting = array();
+  $setting['login_via_pin_by_default'] = array(
+    'group' => array(
+      '#title' => t('PIN Authentication'),
+      '#id' => 'pin-auth',
+    ),
+    'form' => array(
+      '#type' => 'checkbox',
+      '#default_value' => variable_get('login_via_pin_by_default', 0),
+      '#title' => t('User must login with PIN'),
+      '#description' => t('Checking this will force any users of your site to login using their PIN instead of their OpenScholar account'),
+    ),
+  );
+
+  return $setting;
 }
