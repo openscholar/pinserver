@@ -55,6 +55,15 @@ function pinserver_authenticate_menu() {
 }
 
 /**
+ * Impleemnts hook_menu_alter().
+ */
+function pinserver_authenticate_menu_alter(&$items) {
+  $items['user']['page callback'] = 'pinserver_authenticate_user_login';
+  $items['user']['file'] = 'pinserver_authenticate.pages.inc';
+  $items['user']['file path'] = drupal_get_path('module', 'pinserver_authenticate');
+}
+
+/**
  * Refuse access to users that have authenticated.
  * Because that makes no sense.
  * @return bool
@@ -82,11 +91,18 @@ function pinserver_authenticate_menu_local_tasks_alter(&$data, $router_item, $ro
       if ($t['#link']['path'] == 'user/pin') {
         $tabs[$k]['#link']['localized_options']['query'] = drupal_get_destination();
         if (pinserver_get_user_huid()) {
+          drupal_set_message(t('Log in with your existing account to associate it with your Harvard PIN!'));
           unset($tabs[$k]);
         }
       }
     }
   }
+}
+
+function pinserver_authenticate_menu_get_item_alter(&$router_item, $path, $original_map) {
+  dpm($router_item);
+  dpm($path);
+
 }
 
 /**

@@ -1,6 +1,32 @@
 <?php
 
 /**
+ * Page callback
+ *
+ * Allows for login via PIN to be the default action of /user
+ */
+function pinserver_authenticate_user_login() {
+  global $user;
+  module_load_include('pages.inc', 'user');
+
+  if ($user->uid && isset($_GET['destination']) && $_GET['destination'] != 'user'){
+    //Redirect to destination
+    drupal_goto();
+  }
+  elseif ($user->uid) {
+    menu_set_active_item('user/' . $user->uid);
+    return menu_execute_active_handler(NULL, FALSE);
+  }
+  elseif (variable_get('login_via_pin_by_default', FALSE)) {
+    menu_set_active_item('user/pin');
+    return menu_execute_active_handler(NULL, FALSE);
+  }
+  else {
+    return drupal_get_form('user_login');
+  }
+}
+
+/**
  * Routing function
  *
  * See flowchart in pinserver_authenticate.module.com
