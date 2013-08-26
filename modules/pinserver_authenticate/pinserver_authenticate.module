@@ -33,7 +33,7 @@ function pinserver_authenticate_menu() {
     'title' => 'Log in via PIN',
     'page callback' => 'pinserver_authenticate_pin_user_login',
     'access callback' => 'pinserver_authenticate_user_login_access',
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_CALLBACK,
     'file' => 'pinserver_authenticate.pages.inc',
   );
 
@@ -88,11 +88,10 @@ function pinserver_authenticate_menu_local_tasks_alter(&$data, $router_item, $ro
   if ($root_path == 'user') {
     $tabs = &$data['tabs'][0]['output'];
     foreach ($tabs as $k => $t) {
-      if ($t['#link']['path'] == 'user/pin') {
+      if ($t['#link']['path'] == 'user/login') {
         $tabs[$k]['#link']['localized_options']['query'] = drupal_get_destination();
         if (pinserver_get_user_huid()) {
           drupal_set_message(t('Log in with your existing account to associate it with your Harvard PIN!'));
-          unset($tabs[$k]);
         }
       }
     }
@@ -161,6 +160,80 @@ function pinserver_authenticate_user_login(&$user, $account) {
       pinserver_authenticate_set_user_huid($account->uid, $huid);
     }
   }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Adds customizations to user login form
+ */
+function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
+  $query = array(
+    'destination' => 'user'
+  );
+  if (isset($_GET['destination'])) {
+    $query['destination'] = $_GET['destination'];
+  }
+
+  $form['pin'] = array(
+    '#prefix' => '<span id="pin-login" class="pin-button">',
+    '#markup' => l('Login via PIN.', 'user/pin', array('query' => $query)),
+    '#suffix' => '</span>',
+    '#weight' => -1,
+    '#attached' => array(
+      'css' => array(
+        drupal_get_path('module', 'pinserver_authenticate').'/css/pinserver_authenticate.create.css'
+      )
+    )
+  );
+
+  if (!variable_get('login_via_pin_by_default', FALSE)) {
+    $form['pin-fieldset'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Login with your OpenScholar account'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      'name' => $form['name'],
+      'pass' => $form['pass'],
+      'actions' => $form['actions']
+    );
+    unset($form['name'], $form['pass'], $form['actions']);
+  }
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ *
+ * Overrides the login theme function for our own.
+ */
+function pinserver_authenticate_theme_registry_alter(&$reg) {
+  dpm($reg['openscholar_login']);
+  if (isset($reg['openscholar_login'])) {
+    $reg['openscholar_login']['function'] = 'theme_pinserver_authenticate_openscholar_login';
+  }
+}
+
+/**
+ * Points users to the user/pin page if the by default variable is true
+ */
+function theme_pinserver_authenticate_openscholar_login($vars) {
+  global $user;
+
+  // Do not print the login link if you are logged in.
+  if ($user->uid) {
+    return "";
+  }
+
+  $path = variable_get('login_via_pin_by_default', FALSE)?'user/pin':'user';
+
+  return l($vars['link_text'], $path, array(
+    'purl' => array(
+      'disabled' => TRUE,
+    ),
+    'attributes' => $vars['attributes'],
+    'query' => drupal_get_destination(),
+    'alias' => TRUE,
+  ));
 }
 
 /**

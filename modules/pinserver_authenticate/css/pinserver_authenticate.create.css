@@ -1,4 +1,11 @@
-.pin-button {
+#user-login fieldset {
+  border: 0;
+  -webkit-padding-before: 0;
+  -webkit-padding-start: 0;
+}
+
+.pin-button,
+#user-login fieldset legend {
   display: inline-block;
   width: 100%;
   border-radius: 5px;
@@ -7,17 +14,30 @@
   margin: 10px 0;
 }
 
-.pin-button:hover {
+#user-login fieldset legend {
+  font-size: 1em;
+  font-weight: normal;
+}
+
+#user-login fieldset legend .fieldset-legend {
+  background-image: none;
+  padding-left: 0;
+}
+
+.pin-button:hover,
+#user-login fieldset legend:hover {
   background-color: darkgreen;
 }
 
-.pin-button a {
+.pin-button a,
+#user-login fieldset legend a {
   display: block;
   padding: 5px;
   color: black !important;
 }
 
-.pin-button:hover a {
+.pin-button:hover a,
+#user-login fieldset legend:hover a {
   color: white !important;
 }
 
@@ -27,4 +47,8 @@
 
 #footer .footer-login {
   display: none !important;
+}
+
+.summary {
+  display: none;
 }

@@ -17,10 +17,6 @@ function pinserver_authenticate_default_user_login() {
     menu_set_active_item('user/' . $user->uid);
     return menu_execute_active_handler(NULL, FALSE);
   }
-  elseif (variable_get('login_via_pin_by_default', FALSE)) {
-    menu_set_active_item('user/pin');
-    return menu_execute_active_handler(NULL, FALSE);
-  }
   else {
     return drupal_get_form('user_login');
   }
