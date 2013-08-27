@@ -58,9 +58,12 @@ function pinserver_authenticate_menu() {
  * Impleemnts hook_menu_alter().
  */
 function pinserver_authenticate_menu_alter(&$items) {
+  $items['user']['title'] = 'Sign In';
   $items['user']['page callback'] = 'pinserver_authenticate_default_user_login';
   $items['user']['file'] = 'pinserver_authenticate.pages.inc';
   $items['user']['file path'] = drupal_get_path('module', 'pinserver_authenticate');
+
+  $items['user/password']['type'] = MENU_CALLBACK;
 }
 
 /**
@@ -168,6 +171,8 @@ function pinserver_authenticate_user_login(&$user, $account) {
  * Adds customizations to user login form
  */
 function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
+  $form['pass']['#description'] .= t(' <br />!request', array('!request' => l('Forgot your password?', 'user/password')));
+
   if (pinserver_get_user_huid()) return;
 
   $query = array(
@@ -278,4 +283,13 @@ function pinserver_authenticate_form_pinserver_config_alter(&$form, &$form_state
       '#description' => t('Checking this will force any users of your site to login using their PIN instead of their OpenScholar account'),
     )
   );
+}
+
+/**
+ * Change the title of sign on page
+ */
+function pinserver_authenticate_process_page(&$vars) {
+  if (arg(0) == 'user' && (arg(1) === 'login' || (arg(1) == '' && user_is_anonymous()))) {
+    $vars['title'] = t('Sign In');
+  }
 }
