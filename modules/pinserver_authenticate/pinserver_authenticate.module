@@ -168,6 +168,8 @@ function pinserver_authenticate_user_login(&$user, $account) {
  * Adds customizations to user login form
  */
 function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
+  if (pinserver_get_user_huid()) return;
+
   $query = array(
     'destination' => 'user'
   );
@@ -207,7 +209,6 @@ function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
  * Overrides the login theme function for our own.
  */
 function pinserver_authenticate_theme_registry_alter(&$reg) {
-  dpm($reg['openscholar_login']);
   if (isset($reg['openscholar_login'])) {
     $reg['openscholar_login']['function'] = 'theme_pinserver_authenticate_openscholar_login';
   }
