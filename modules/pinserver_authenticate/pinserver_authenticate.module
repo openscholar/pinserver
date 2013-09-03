@@ -237,7 +237,7 @@ function theme_pinserver_authenticate_openscholar_login($vars) {
       'disabled' => TRUE,
     ),
     'attributes' => $vars['attributes'],
-    'query' => drupal_get_destination(),
+    //'query' => drupal_get_destination(),
     'alias' => TRUE,
   ));
 }
