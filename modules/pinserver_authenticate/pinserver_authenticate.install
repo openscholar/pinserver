@@ -37,19 +37,19 @@ function pinserver_authenticate_schema() {
 }
 
 function pinserver_authenticate_install() {
-  if (db_table_exists('os_pinserver')) {
-    $q = db_select('os_pinserver', 'op')
+  if (db_table_exists('iqss_pinserver_register')) {
+    $q = db_select('iqss_pinserver_register', 'op')
       ->fields('op')
       ->execute();
 
     foreach ($q as $r) {
       drupal_write_record('pinserver_users', $r);
     }
-
-    db_drop_table('os_pinserver');
+    //db_drop_table('iqss_pinserver_register');
   }
-  if (db_table_exists('iqss_pinserver_register')) {
-    $q = db_select('iqss_pinserver_register', 'op')
+
+  if (db_table_exists('os_pinserver')) {
+    $q = db_select('os_pinserver', 'op')
       ->fields('op')
       ->execute();
 
@@ -57,13 +57,19 @@ function pinserver_authenticate_install() {
       $uid = $r->uid;
       error_log('uid: '.$uid);
       unset($r->uid);
-      db_merge('pinserver_users')
-        ->fields((array) $r)
-        ->key(array('uid' => $uid))
-        ->execute();
+      try {
+        db_merge('pinserver_users')
+          ->fields((array) $r)
+          ->key(array('uid' => $uid))
+          ->execute();
+      }
+      catch (Exception $e) {
+        // this usually means a duplicate HUID
+        // ignore it in this case and keep going
+      }
     }
 
-    db_drop_table('iqss_pinserver_register');
+    //db_drop_table('os_pinserver');
   }
 }
 

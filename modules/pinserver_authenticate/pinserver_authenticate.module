@@ -145,7 +145,7 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
     return true;
   }
   catch (Exception $e) {
-    drupal_set_message('Error linking HUID with OpenScholar account');
+    drupal_set_message('Error linking HUID with OpenScholar account', 'error');
     error_log($e->getMessage());
     return false;
   }
@@ -159,8 +159,13 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
  */
 function pinserver_authenticate_user_login(&$user, $account) {
   if ($huid = pinserver_get_user_huid()) {
-    if (!pinserver_authenticate_get_uid_from_huid($huid)) {
+    $pin_user = pinserver_authenticate_get_uid_from_huid($huid);
+    if (!$pin_user) {
       pinserver_authenticate_set_user_huid($account->uid, $huid);
+    }
+    elseif ($pin_user != $user->uid) {
+      drupal_set_message('Your PIN has been linked with another account. You may not link it with another.', 'error');
+      pinserver_remove_session();
     }
   }
 }
