@@ -106,7 +106,8 @@ function pinserver_authenticate_user_create() {
   }
 
   $output['notice'] = array(
-    '#markup' => t('Sorry, but we don\'t have an OpenScholar account associated with your PIN.<br />')
+    '#markup' => t('Sorry, but we don\'t have an OpenScholar account associated with your PIN.<br />'),
+    '#weight' => -2,
   );
 
   $output['login'] = array(
@@ -121,6 +122,14 @@ function pinserver_authenticate_user_create() {
       '#prefix' => '<span id="pin-register" class="pin-button">',
       '#markup' => l('Create a OpenScholar site and account for this PIN', 'site/register'),
       '#suffix' => '</span>'
+    );
+  }
+  else {
+    $output['new_site'] = array(
+      '#prefix' => '<span id="pin-no-user">',
+      '#markup' => t('You may not create a new account. A site manager must create an account for you before you can log in.'),
+      '#suffix' => '</span>',
+      '#weight' => -1
     );
   }
 
