@@ -115,11 +115,14 @@ function pinserver_authenticate_user_create() {
     '#suffix' => '</span>'
   );
 
-  $output['new_site'] = array(
-    '#prefix' => '<span id="pin-register" class="pin-button">',
-    '#markup' => l('Create a OpenScholar site and account for this PIN', 'site/register'),
-    '#suffix' => '</span>'
-  );
+  $menu_item = menu_get_item('site/register');
+  if ($menu_item['access']) {
+    $output['new_site'] = array(
+      '#prefix' => '<span id="pin-register" class="pin-button">',
+      '#markup' => l('Create a OpenScholar site and account for this PIN', 'site/register'),
+      '#suffix' => '</span>'
+    );
+  }
 
   $output['nevermind'] = array(
     '#prefix' => '<span id="pin-nvm" class="pin-button">',
