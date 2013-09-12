@@ -106,13 +106,13 @@ function pinserver_authenticate_user_create() {
   }
 
   $output['notice'] = array(
-    '#markup' => t('Sorry, but we don\'t have an OpenScholar account associated with your PIN.<br />'),
+    '#markup' => t('Sorry, but we don\'t have an OpenScholar account associated with your Harvard University ID (HUID).<br />'),
     '#weight' => -2,
   );
 
   $output['login'] = array(
     '#prefix' => '<span id="pin-login" class="pin-button">',
-    '#markup' => l('Login with your existing account to link it with your PIN.', 'user/login', array('query' => $query)),
+    '#markup' => l('Login with your existing account to link it with your HUID.', 'user/login', array('query' => $query)),
     '#suffix' => '</span>'
   );
 
@@ -120,7 +120,7 @@ function pinserver_authenticate_user_create() {
   if ($menu_item['access']) {
     $output['new_site'] = array(
       '#prefix' => '<span id="pin-register" class="pin-button">',
-      '#markup' => l('Create a OpenScholar site and account for this PIN', 'site/register'),
+      '#markup' => l('Create a OpenScholar site and account for this HUID', 'site/register'),
       '#suffix' => '</span>'
     );
   }
