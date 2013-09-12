@@ -132,9 +132,11 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
   );
   if (strlen($huid) > 10) {
     $fields['hashID'] = $huid;
+    $fields['huid'] = null;
   }
   else {
     $fields['huid'] = $huid;
+    $fields['hashID'] = null;
   }
 
   try {
