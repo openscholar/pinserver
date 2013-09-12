@@ -165,7 +165,7 @@ function pinserver_authenticate_user_login(&$user, $account) {
     if (!$pin_user) {
       pinserver_authenticate_set_user_huid($account->uid, $huid);
     }
-    elseif ($pin_user != $user->uid) {
+    elseif ($pin_user != $account->uid) {
       drupal_set_message('Your HUID has been linked with another account. You may not link it with another.', 'error');
       pinserver_remove_session();
     }
