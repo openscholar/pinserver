@@ -300,3 +300,18 @@ function pinserver_authenticate_process_page(&$vars) {
     $vars['title'] = t('Sign In');
   }
 }
+
+/**
+ * Implements hook_vsite_access_denied().
+ *
+ * Sets the variable on access denied pages so the login link will be correct for private sites
+ */
+function pinserver_authenticate_vsite_access_denied($vsite) {
+  $var = db_select('spaces_overrides', 'so')
+        ->fields('so', array('value'))
+        ->condition('id', $vsite->group->nid)
+        ->condition('object_id', 'login_via_pin_by_default')
+        ->execute()
+        ->fetchField();
+  $GLOBALS['conf']['login_via_pin_by_default'] = unserialize($var);
+}
