@@ -1,13 +1,10 @@
-.not-logged-in.page-user #page #columns.show-msg {
-  width: 873px;
-}
-
 form > div {
   /** clears it */
   overflow: auto;
 }
 
-#user-login fieldset {
+#user-login fieldset,
+fieldset.pin-fieldset {
   border: 0;
   -webkit-padding-before: 0;
   -webkit-padding-start: 0;
@@ -17,22 +14,20 @@ form > div {
 }
 
 #user-login fieldset,
+fieldset.pin-fieldset,
 .pin-button {
   width: 98%;
 }
 
-#columns.show-msg #user-login fieldset,
-#columns.show-msg .pin-button {
-  width: 50%;
-}
-
 .pin-button,
+fieldset.pin-fieldset legend,
 #user-login fieldset legend {
   display: inline-block;
   border-radius: 5px;
   background-color: lightgreen;
   color: white;
   margin: 15px 0;
+  font-size: 1em;
 
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
@@ -40,23 +35,27 @@ form > div {
   padding-left: 10px;
 }
 
+fieldset.pin-fieldset legend,
 #user-login fieldset legend {
   font-weight: normal;
   width: 100%;
   padding-right: 0;
 }
 
+fieldset.pin-fieldset legend .fieldset-legend,
 #user-login fieldset legend .fieldset-legend {
-  background-image: none;
-  padding-left: 0;
+  background-image: none !important;
+  padding-left: 0 !important;
 }
 
 .pin-button:hover,
+fieldset.pin-fieldset legend:hover,
 #user-login fieldset legend:hover {
   background-color: darkgreen;
 }
 
 .pin-button a,
+fieldset.pin-fieldset legend a,
 #user-login fieldset legend a {
   display: block;
   padding: 2px;
@@ -64,6 +63,7 @@ form > div {
 }
 
 .pin-button:hover a,
+fieldset.pin-fieldset legend:hover a,
 #user-login fieldset legend:hover a {
   color: white !important;
 }
@@ -83,15 +83,3 @@ form > div {
 @-moz-document url-prefix() {
   #edit-pin-fieldset {margin: 10px 0 0 0 !important;}
 }
-
-#pin-message {
-  float: right;
-  width: 40%;
-  margin: 15px 0;
-  display: none;
-}
-
-#columns.show-msg #pin-message {
-  display: block;
-}
-

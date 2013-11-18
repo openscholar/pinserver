@@ -111,11 +111,27 @@ function pinserver_authenticate_user_create() {
   );
 
   $output['login'] = array(
-    '#prefix' => '<span id="pin-login" class="pin-button">',
-    '#markup' => l('Login in to link my account now.', 'user/login', array('query' => $query + array('link' => 'pin'))),
-    '#suffix' => '</span>',
+    '#type' => 'fieldset',
+    '#title' => t('Login in to link my account now.'),
+    '#collapsible' => true,
+    '#collapsed' => true,
+    '#attributes' => array(
+      'class' => array(
+        'collapsible',
+        'collapsed',
+        'pin-fieldset'
+      )
+    ),
+    'form' => drupal_get_form('user_login'),
+    '#attached' => array(
+      'library' => array(
+        array('system', 'drupal.collapse')
+      )
+    ),
     '#weight' => -2,
   );
+
+  $output['login']['form']['submit'][] = 'pinserver_authenticate_user_login_submit';
 
   $menu_item = menu_get_item('site/register');
   if ($menu_item['access']) {
@@ -143,6 +159,19 @@ function pinserver_authenticate_user_create() {
   );
 
   return $output;
+}
+
+/**
+ * Associates the user's account with a HUID
+ *
+ * The user only gets here if they log in from
+ */
+function pinserver_authenticate_user_login_submit($form, $form_state) {
+  if (user_is_logged_in() && $huid = pinserver_get_user_huid()) {
+    $uid = $GLOBALS['user']->uid;
+
+    pinserver_authenticate_set_user_huid($uid, $huid);
+  }
 }
 
 /**

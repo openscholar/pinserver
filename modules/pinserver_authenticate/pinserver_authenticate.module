@@ -154,25 +154,6 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
 }
 
 /**
- * Implements hook_user_login().
- *
- * Associates the active PIN user with the Drupal user that was just logged in to.
- * Only does this is there is a PIN user and no linkage has been established already
- */
-function pinserver_authenticate_user_login(&$user, $account) {
-  if ($huid = pinserver_get_user_huid()) {
-    $pin_user = pinserver_authenticate_get_uid_from_huid($huid);
-    if (!$pin_user) {
-      pinserver_authenticate_set_user_huid($account->uid, $huid);
-    }
-    elseif ($pin_user != $account->uid) {
-      drupal_set_message('Your HUID has been linked with another account. You may not link it with another.', 'error');
-      pinserver_remove_session();
-    }
-  }
-}
-
-/**
  * Implements hook_form_FORM_ID_alter().
  *
  * Adds customizations to user login form
@@ -180,16 +161,7 @@ function pinserver_authenticate_user_login(&$user, $account) {
 function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
   $form['pass']['#description'] .= t(' <br />!request', array('!request' => l('Forgot your password?', 'user/password')));
 
-  if (isset($_GET['link'])) {
-    $form['pin-link'] = array(
-      '#type' => 'value',
-      '#value' => true,
-    );
-
-    return;
-  }
-
-  if (pinserver_get_user_huid()) return;
+  if (1 || pinserver_get_user_huid()) return;
 
   $query = array(
     'destination' => 'user'
@@ -222,20 +194,6 @@ function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
     );
     unset($form['name'], $form['pass'], $form['actions']);
   }
-
-  $form['did-you-know'] = array(
-    '#prefix' => '<div id="pin-message">',
-    '#weight' => -2,
-    '#type' => 'markup',
-    '#markup' => t('<strong>Did you know?</strong><br>For your convenience, you can now link your Harvard University ID (HUID) with your
-      OpenScholar account. Log in using your HUID to get started.'),
-    '#suffix' => '<label><input type="checkbox" id="dont-show"> '.t('Don\'t show this message again.').'</label></div>',
-    '#attached' => array(
-      'js' => array(
-        drupal_get_path('module', 'pinserver_authenticate').'/js/pinserver_authenticate.login.js',
-      )
-    )
-  );
 }
 
 /**
