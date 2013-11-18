@@ -161,7 +161,7 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
 function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
   $form['pass']['#description'] .= t(' <br />!request', array('!request' => l('Forgot your password?', 'user/password')));
 
-  if (1 || pinserver_get_user_huid()) return;
+  if (pinserver_get_user_huid()) return;
 
   $query = array(
     'destination' => 'user'
