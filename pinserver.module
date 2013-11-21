@@ -450,7 +450,8 @@ function pinserver_check_token() {
   // 120 equals 2 minutes; could change this to 60 but no more than 180
   // This was 24min etc on some valid pin calls, and was causing issues, temp fix to 60 min
   $elapsed = abs($values['time'] - time());
-  if ($values['time'] && $elapsed > (60 * variable_get('pinserver_elapsed_time',2))) {
+  $max_min = (int) variable_get('pinserver_elapsed_time',240);
+  if ($values['time'] && $elapsed > (60 * $max_min)) {
     $values['errors'][] = "time-elapsed-$elapsed";
   }
 
