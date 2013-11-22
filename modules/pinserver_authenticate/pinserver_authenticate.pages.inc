@@ -137,7 +137,7 @@ function pinserver_authenticate_user_create() {
   if ($menu_item['access']) {
     $output['new_site'] = array(
       '#prefix' => '<span id="pin-register" class="pin-button">',
-      '#markup' => l('Create a OpenScholar site and account for this HUID', 'site/register'),
+      '#markup' => l('Create an OpenScholar site and account for my HUID', 'site/register'),
       '#suffix' => '</span>',
       '#weight' => -1
     );
