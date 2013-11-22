@@ -38,7 +38,7 @@ function pinserver_authenticate_menu() {
   );
 
   $items['user/pin/create'] = array(
-    'title' => 'Unlinked Account',
+    'title' => 'First Time Logging In with HUID',
     'page callback' => 'pinserver_authenticate_user_create',
     'access callback' => 'pinserver_authenticate_user_login_access',
     'file' => 'pinserver_authenticate.pages.inc',
