@@ -38,7 +38,7 @@ function pinserver_authenticate_menu() {
   );
 
   $items['user/pin/create'] = array(
-    'title' => 'Create user from PIN',
+    'title' => 'First Time Logging In with HUID',
     'page callback' => 'pinserver_authenticate_user_create',
     'access callback' => 'pinserver_authenticate_user_login_access',
     'file' => 'pinserver_authenticate.pages.inc',
@@ -150,25 +150,6 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
     drupal_set_message('Error linking HUID with OpenScholar account', 'error');
     error_log($e->getMessage());
     return false;
-  }
-}
-
-/**
- * Implements hook_user_login().
- *
- * Associates the active PIN user with the Drupal user that was just logged in to.
- * Only does this is there is a PIN user and no linkage has been established already
- */
-function pinserver_authenticate_user_login(&$user, $account) {
-  if ($huid = pinserver_get_user_huid()) {
-    $pin_user = pinserver_authenticate_get_uid_from_huid($huid);
-    if (!$pin_user) {
-      pinserver_authenticate_set_user_huid($account->uid, $huid);
-    }
-    elseif ($pin_user != $account->uid) {
-      drupal_set_message('Your HUID has been linked with another account. You may not link it with another.', 'error');
-      pinserver_remove_session();
-    }
   }
 }
 

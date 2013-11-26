@@ -1,4 +1,10 @@
-#user-login fieldset {
+form > div {
+  /** clears it */
+  overflow: auto;
+}
+
+#user-login fieldset,
+fieldset.pin-fieldset {
   border: 0;
   -webkit-padding-before: 0;
   -webkit-padding-start: 0;
@@ -7,39 +13,57 @@
   padding-top: 5px;
 }
 
+#user-login fieldset,
+fieldset.pin-fieldset,
+.pin-button {
+  width: 98%;
+}
+
 .pin-button,
+fieldset.pin-fieldset legend,
 #user-login fieldset legend {
   display: inline-block;
-  width: 100%;
   border-radius: 5px;
   background-color: lightgreen;
   color: white;
-  margin: 10px 0;
-}
-
-#user-login fieldset legend {
+  margin: 15px 0;
   font-size: 1em;
-  font-weight: normal;
+
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
+  padding-left: 10px;
 }
 
+fieldset.pin-fieldset legend,
+#user-login fieldset legend {
+  font-weight: normal;
+  width: 100%;
+  padding-right: 0;
+}
+
+fieldset.pin-fieldset legend .fieldset-legend,
 #user-login fieldset legend .fieldset-legend {
-  background-image: none;
-  padding-left: 0;
+  background-image: none !important;
+  padding-left: 0 !important;
 }
 
 .pin-button:hover,
+fieldset.pin-fieldset legend:hover,
 #user-login fieldset legend:hover {
   background-color: darkgreen;
 }
 
 .pin-button a,
+fieldset.pin-fieldset legend a,
 #user-login fieldset legend a {
   display: block;
-  padding: 5px;
+  padding: 2px;
   color: black !important;
 }
 
 .pin-button:hover a,
+fieldset.pin-fieldset legend:hover a,
 #user-login fieldset legend:hover a {
   color: white !important;
 }
@@ -54,4 +78,8 @@
 
 .summary {
   display: none;
+}
+
+@-moz-document url-prefix() {
+  #edit-pin-fieldset {margin: 10px 0 0 0 !important;}
 }

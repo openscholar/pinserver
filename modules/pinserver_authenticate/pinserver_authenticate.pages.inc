@@ -106,28 +106,46 @@ function pinserver_authenticate_user_create() {
   }
 
   $output['notice'] = array(
-    '#markup' => t('Sorry, but we don\'t have an OpenScholar account associated with your Harvard University ID (HUID).<br />'),
-    '#weight' => -2,
+    '#markup' => t('You don\'t have an OpenScholar account linked with your Harvard University ID (HUID) yet.<br />'),
+    '#weight' => -3,
   );
 
   $output['login'] = array(
-    '#prefix' => '<span id="pin-login" class="pin-button">',
-    '#markup' => l('Login with your existing account to link it with your HUID.', 'user/login', array('query' => $query)),
-    '#suffix' => '</span>'
+    '#type' => 'fieldset',
+    '#title' => t('Login in to link my account now.'),
+    '#collapsible' => true,
+    '#collapsed' => true,
+    '#attributes' => array(
+      'class' => array(
+        'collapsible',
+        'collapsed',
+        'pin-fieldset'
+      )
+    ),
+    'form' => drupal_get_form('user_login'),
+    '#attached' => array(
+      'library' => array(
+        array('system', 'drupal.collapse')
+      )
+    ),
+    '#weight' => -2,
   );
+
+  $output['login']['form']['submit'][] = 'pinserver_authenticate_user_login_submit';
 
   $menu_item = menu_get_item('site/register');
   if ($menu_item['access']) {
     $output['new_site'] = array(
       '#prefix' => '<span id="pin-register" class="pin-button">',
-      '#markup' => l('Create a OpenScholar site and account for this HUID', 'site/register'),
-      '#suffix' => '</span>'
+      '#markup' => l('Create an OpenScholar site and account for my HUID', 'site/register'),
+      '#suffix' => '</span>',
+      '#weight' => -1
     );
   }
   else {
     $output['new_site'] = array(
       '#prefix' => '<span id="pin-no-user">',
-      '#markup' => t('You may not create a new account. A site manager must create an account for you before you can log in.'),
+      '#markup' => t('If you don\'t have an OpenScholar account and need one, ask the site manager to create one for you.'),
       '#suffix' => '</span>',
       '#weight' => -1
     );
@@ -135,11 +153,25 @@ function pinserver_authenticate_user_create() {
 
   $output['nevermind'] = array(
     '#prefix' => '<span id="pin-nvm" class="pin-button">',
-    '#markup' => l('Do nothing and return to where you were.', 'user/pin/cancel', array('query' => $query)),
-    '#suffix' => '</span>'
+    '#markup' => l('Back', 'user/pin/cancel', array('query' => $query)),
+    '#suffix' => '</span>',
+    '#weight' => 0,
   );
 
   return $output;
+}
+
+/**
+ * Associates the user's account with a HUID
+ *
+ * The user only gets here if they log in from
+ */
+function pinserver_authenticate_user_login_submit($form, $form_state) {
+  if (user_is_logged_in() && $huid = pinserver_get_user_huid()) {
+    $uid = $GLOBALS['user']->uid;
+
+    pinserver_authenticate_set_user_huid($uid, $huid);
+  }
 }
 
 /**
