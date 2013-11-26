@@ -244,8 +244,8 @@ function pinserver_prepare_pin_v2_token($pin_parameters, $pin_signature) {
   $values['ip'] = $token_array[3];
 
   // Time must be converted into unix timestamp.
-  $exploded_time = explode(" ", $token_array[4]);
-  $values['time'] = strtotime($exploded_time[1] . " " . $exploded_time[2] . " " . $exploded_time[5] . " " . $exploded_time[3]);
+  $time = $token_array[4];
+  $values['time'] = strtotime($time);
 
   // Unused parameter "blank"
   // $token_array[5]
