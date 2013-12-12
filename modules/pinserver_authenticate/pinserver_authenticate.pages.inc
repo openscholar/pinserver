@@ -122,7 +122,7 @@ function pinserver_authenticate_user_create() {
         'pin-fieldset'
       )
     ),
-    'form' => drupal_get_form('user_login'),
+    'form' => drupal_get_form('user_login', 'pin-login'),
     '#attached' => array(
       'library' => array(
         array('system', 'drupal.collapse')
@@ -130,8 +130,6 @@ function pinserver_authenticate_user_create() {
     ),
     '#weight' => -2,
   );
-
-  $output['login']['form']['submit'][] = 'pinserver_authenticate_user_login_submit';
 
   $menu_item = menu_get_item('site/register');
   if ($menu_item['access']) {
