@@ -108,6 +108,13 @@ function pinserver_check_user() {
     drupal_goto(ltrim($_GET['redirect'], '/'),array('query' => drupal_get_query_parameters(NULL,array('q','tk_forward','redirect'))));
   }
 
+  global $base_url;
+  //If we are not using tk_forward and we are redirecting to a different domain, use the auth on that domain
+  if(isset($_GET['redirect']) && parse_url($_GET['redirect'],PHP_URL_HOST) && parse_url($_GET['redirect'],PHP_URL_HOST) != parse_url($base_url,PHP_URL_HOST)){
+    $url_parts = parse_url($_GET['redirect']);
+    drupal_goto($url_parts['scheme']."://".$url_parts['host']."/pinserver/auth" ,array('query' => drupal_get_query_parameters()));
+  }
+
   //Validate User
   if(!pinserver_authenticate_user(TRUE)){
     $errors = implode(',', pinserver_get_errors());
