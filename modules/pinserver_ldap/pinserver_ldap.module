@@ -12,8 +12,6 @@ define('PIN_LDAP_URL', variable_get('pinserver_plus_ldap_url', ''));
 define('PIN_LDAP_USER', variable_get('pinserver_plus_ldap_user', ''));
 define('PIN_LDAP_PASSWORD', variable_get('pinserver_plus_ldap_password', ''));
 
-module_load_include('inc', 'pinserver_plus', 'includes/pinserver_plus.api');
-
 /**
  * Implements hook_pinserver().
  */
