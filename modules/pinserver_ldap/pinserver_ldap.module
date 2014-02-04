@@ -1,4 +1,16 @@
-<?php  
+<?php
+
+/**
+ * @file
+ * Integrates Harvard PIN LDAP attributes with pinserver module.
+ */
+
+/**
+ * LDAP constants.
+ */
+define('PIN_LDAP_URL', variable_get('pinserver_plus_ldap_url', ''));
+define('PIN_LDAP_USER', variable_get('pinserver_plus_ldap_user', ''));
+define('PIN_LDAP_PASSWORD', variable_get('pinserver_plus_ldap_password', ''));
 
 /**
  * These are module constants - Please do not modify these
@@ -11,9 +23,6 @@ define('PIN_HASH_HUID', variable_get('pinserver_plus_hash_huid', 0)); //Determin
 define('PIN_APP_NAME', variable_get('pinserver_plus_app_name', '')); //application name given by directory services
 define('PIN_TARGET', variable_get('pinserver_plus_target', '')); //application name given by directory services
 define('PIN_SALT', variable_get('pinserver_plus_salt', '')); // salt for hashing HUID
-define('PIN_LDAP_URL', variable_get('pinserver_plus_ldap_url', ''));
-define('PIN_LDAP_USER', variable_get('pinserver_plus_ldap_user', ''));
-define('PIN_LDAP_PASSWORD', variable_get('pinserver_plus_ldap_password', ''));
 define('PIN_IP_VAL', variable_get('pinserver_plus_ip_validation', 0)); //Validate IP address or not. Reinhard: Masha in directory services says don't validate ip. Can cause vpn/tunneling problems. 
 define('GPG_DIR', variable_get('pinserver_plus_gpg_dir', dirname(__FILE__) . '/.gnupg')); //absolute path to directory to verify detached signature
 define('GPG_BIN', variable_get('pinserver_plus_gpg_bin', '/usr/bin/gpg')); //absolute path to gpg binary
@@ -70,7 +79,7 @@ function pinserver_plus_permission() {
   );
 }
 
-/*
+/**
  * Implementation of hook_theme()
  */
 function pinserver_plus_theme() {
@@ -207,7 +216,6 @@ function pinserver_plus_prepare_pin_v2_token($pin_parameters, $pin_signature) {
 
   return $values;
 }
-
 
 /**
  * pinserver_plus_check_token()
@@ -390,7 +398,7 @@ function pinserver_plus_error($type, $values) {
   }
 }
 
-/* 
+/**
  * theme_pinserver_plus_token_error()
  * @param  array $values - all errors that occured due to a problem with the token or token processing. 
  */
@@ -407,7 +415,6 @@ function theme_pinserver_plus_token_error($values = NULL) {
   $message .= '.</p>';
   return $message;
 }
-
 
 /**
  * Implementation of hook_pinserver().
@@ -504,12 +511,23 @@ function save_pinuser($user, $properties) { // renamed save_pin_user to suppress
   }
 };
 
-
+/**
+ * @TODO document
+ *
+ * @param $username
+ * @return mixed
+ */
 function username_already_taken($username) {
   // was: return db_result(db_query("SELECT count(*) from {users} WHERE name = '%s'", $username));
   return db_query("SELECT count(*) from {users} WHERE name = :name", array(':name' => $username))->fetchField();
 }
 
+/**
+ * @TODO document
+ *
+ * @param $email
+ * @return mixed
+ */
 function email_already_taken($email) {
   // was: return db_result(db_query("SELECT count(*) from {users} WHERE mail = '%s'", $email));
   return db_query("SELECT count(*) from {users} WHERE mail = :mail", array(':mail' => $email))->fetchField();
@@ -536,7 +554,6 @@ function increment_username($name) {
  * Uses plus addressing.
  * If last characters are plus sign followed by numbers, increment by 1 and return. If they are not, append "+1"
  */
-
 function increment_email($email) {
   $matches = array();
   if (preg_match('/^(.+?)\+(\d+)(\@.+?)$/',  $email, $matches)) {
@@ -706,4 +723,3 @@ function pinserver_plus_form_alter(&$form, &$form_state, $form_id) {
   }
   return $form;
 }
-
