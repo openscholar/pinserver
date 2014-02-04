@@ -6,129 +6,66 @@
  */
 
 /**
- * LDAP constants.
- */
-define('PIN_LDAP_URL', variable_get('pinserver_plus_ldap_url', ''));
-define('PIN_LDAP_USER', variable_get('pinserver_plus_ldap_user', ''));
-define('PIN_LDAP_PASSWORD', variable_get('pinserver_plus_ldap_password', ''));
-
-/**
- * Implements hook_pinserver().
- */
-function pinserver_plus_pinserver() {
-  global $user;
-  $huid = pinserver_plus_get_session_huid();
-  $hashed_huid = salted_md5($huid);
-  $uid = pinserver_plus_check_row($hashed_huid);
-  if (strlen($hashed_huid) && strlen($uid)) {
-    error_log("We already have a drupal user corresponding to this hashed huid."); 
-    $user = user_load($uid);
-    error_log("Hashed HUID: " . $hashed_huid . " -> Drupal UID: " . $uid);
-    if ( $user->name == $hashed_huid ) {
-      error_log("Drupal username looks like a hashed huid... let's update it with LDAP info.");
-      update_pinuser($user, $huid);
-    }
-  } 
-  else {
-    error_log("We haven't seen this huid before: " . $huid);
-    error_log("Let's create a new drupal account for it...");
-    $user = create_pinuser($huid);
-    error_log("Great. Now let's record the mapping between these 2 ids so we can reuse it next time.");
-    error_log("Hashed HUID: " . $hashed_huid . " -> Drupal UID: " . $user->uid);
-    pinserver_plus_add_row($user->uid, $hashed_huid);
-  }
-  // Update the user table timestamp noting user has logged in.
-  // This is also used to invalidate one-time login links.
-  $user->login = REQUEST_TIME;
-  // was: db_query("UPDATE {users} SET login = %d WHERE uid = %d", $user->login, $user->uid);
-  db_update('users')
-    ->fields(array('login' => $user->login))
-    ->condition('uid', $user->uid)
-    ->execute();
-  // Regenerate the session ID to prevent against session fixation attacks.
-  drupal_session_regenerate();
-  // Remove pinserver session variables
-  pinserver_plus_remove_session();
-}
-
-/**
- * Updates existing drupal username and email for given Harvard PIN via LDAP.
+ * Gets name and email from ldap for given HUID.
  *
- * Should only be called for old (pre August 2012) accounts before we had
- * access to LDAP (when username and email were based on ugly hashed
- * huid).
+ * @param int $huid
+ *   A given user's Harvard HUID.
+ *
+ * @throws Exception
+ *
+ * @return array $info
+ *   An indexed array containing:
+ *   - success: TRUE only if there were no errors connecting/binding/querying
+ *   the LDAP server.
+ *   - errors: An array containing any (string) error messages encountered.
+ *   - entries: An indexed array with keys equal to LDAP attribute names,
+ *   and values as arrays containing any value(s) found from the search.
  */
-function update_pinuser($user, $huid) { // renamed update_pin_user to suppress Coder error
-  $ldapinfo = get_ldap_info($huid);
-  $new_username = generate_username($ldapinfo);
-  return save_pinuser(
-    $user,
-    array(
-      'name' => $new_username, //'somename',
-      'mail' => $ldapinfo['email'],
-    )
+function pinserver_ldap_attributes_from_huid($huid) {
+  $info = array(
+    'success' => FALSE,
   );
-}
+  $url = variable_get('pinserver_ldap_url', '');
+  $username = variable_get('pinserver_ldap_username', '');
+  $password = variable_get('pinserver_ldap_password', '');
 
-/**
- * Creates a new drupal user for given Harvard PIN user.
- *
- * Look up harvard user in LDAP to create drupal username and email.
- */
-function create_pinuser($huid) { // renamed create_pin_user to suppress Coder error
-  $ldapinfo = get_ldap_info($huid);
-  $new_username = generate_username($ldapinfo);
-  return save_pinuser(
-    new stdClass(),
-    array(
-      'name' => $new_username, //'somename',
-      'pass' => user_password(),
-      'mail' => $ldapinfo['email'],
-      'roles' => array(),
-      'status' => 1,
-    )
-  );
-}
+  #error_log("Host: " . $_SERVER['HTTP_HOST']);
+  #error_log("Getting ldap info from " . $url);
 
-/**
- * Gets name and email from ldap for given huid.
- *
- * TODO: move connection information to configuration. (soon!)
- */
-function get_ldap_info($huid) {
-  $ldap_info = array();
-  error_log("Host: " . $_SERVER['HTTP_HOST']);
-  $url = PIN_LDAP_URL;
-  error_log("Getting ldap info from " . $url);
-  $username = PIN_LDAP_USER;
-  $password = PIN_LDAP_PASSWORD;
   ldap_set_option(NULL, LDAP_OPT_DEBUG_LEVEL, 7);
   $ds = ldap_connect($url);
-  if ( !$ds ) {
-    throw new Exception("Couldn't connect to LDAP.");
+  if (!$ds) {
+    $info['errors'][] = t("Couldn't connect to LDAP.");
+    return $info;
   }
+
   ldap_set_option($ds, LDAP_OPT_PROTOCOL_VERSION, 3);
   ldap_set_option($ds, LDAP_OPT_REFERRALS, 0); 
   $db = ldap_bind($ds, $username, $password);
-  if (! $db) {
-    throw new Exception("Couldn't bind to LDAP.");
+  if (!$db) {
+    $info['errors'][] = t("Couldn't bind to LDAP.");
+    return $info;
   }
-  $search_dn     = "ou=people, o=Harvard University Core, dc=huid, dc=harvard, dc=edu";
-  $search_filter =  "(&(harvardeduidnumber=" . $huid . "))";
-  $sr=ldap_search($ds, $search_dn, $search_filter);  
+
+  $search_dn = "ou=people, o=Harvard University Core, dc=huid, dc=harvard, dc=edu";
+  $search_filter = "(&(harvardeduidnumber=" . $huid . "))";
+  $sr = ldap_search($ds, $search_dn, $search_filter);
+  if ($sr === FALSE) {
+    $info['errors'][] = t('An error occurred while attempting to search LDAP.');
+    return $info;
+  }
+  $info['success'] = TRUE;
+
   #echo "\nSearch result is " . $sr . "<br />";
   #echo "\nNumber of entries returned is " . ldap_count_entries($ds, $sr) . "<br />";
-  $info = ldap_get_entries($ds, $sr);
+
+  $entries = ldap_get_entries($ds, $sr);
+  $info['entries'] = $entries;
+
   #echo "\nData for " . $info["count"] . " items returned:<p>";
   #var_dump($info);
-  for ($i=0; $i<$info["count"]; $i++) {
-    $ldap_info['last']   = $info[$i]["sn"][0];
-    $ldap_info['first']  = $info[$i]["givenname"][0];
-    $ldap_info['middle'] = $info[$i]["harvardedumiddlename"][0];
-    $ldap_info['email']  = $info[$i]["mail"][0];
-  }
-  error_log("Got this info: " . $ldap_info['last']);
-  return $ldap_info;
+
+  return $info;
 }
 
 /**
