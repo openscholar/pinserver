@@ -1,0 +1,6 @@
+; $Id$
+name = Pinserver Plus
+description = Maps a Pinserver HUID account to a Drupal account so you can log in.
+package = Harvard PIN Authentication
+core = 7.x
+files[] = includes/pinserver_plus.api.inc

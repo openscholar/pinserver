@@ -1,0 +1,67 @@
+<?php
+
+/**
+* @file
+* Pinserver Plus install hooks
+*
+*/
+
+/**
+* Implementation of hook_uninstall()
+*/
+function pinserver_plus_install() {
+  // nothing to do here
+}
+
+/**
+* Implementation of hook_uninstall()
+*/
+function pinserver_plus_uninstall() {
+
+  //remove pinserver plus administrative system variables
+  variable_del('pinserver_plus_pin_url');
+  variable_del('pinserver_plus_app_name');
+  variable_del('pinserver_plus_gpg_dir');
+  variable_del('pinserver_plus_landing_path');
+  variable_del('pinserver_plus_hash_huid');
+  variable_del('pinserver_plus_support_contact');
+  variable_del('pinserver_plus_enable_logging');
+  variable_del('pinserver_plus_error_log');  
+
+//remove other pinserver plus variables
+  variable_del('pinserver_plus_ip_validation');
+  variable_del('pinserver_plus_gpg_bin');  
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function pinserver_plus_schema() {
+  $schema['pinserver_plus'] = array(
+    'description' => 'Maps unique encrypted HUID identifier to Drupal user ID',
+    'fields' => array(
+      'uid' => array(
+        'description' => 'Drupal user ID',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'huid' => array(
+        'description' => "Holds the Harvard ID of returning users",
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'reg_time' => array(
+        'description' => "The time of user registration",
+        'type' => 'int',
+      ),
+    ),
+    'unique keys' => array(
+      'huid' => array('huid'),
+    ),
+    'primary key' => array( 'uid') ,
+  );
+  return $schema;
+}

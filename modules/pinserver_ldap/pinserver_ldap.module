@@ -1,0 +1,709 @@
+<?php  
+
+/**
+ * These are module constants - Please do not modify these
+ */
+define('PIN_URL', variable_get('pinserver_plus_pin_url', ''));  // url to pin server
+define('PIN_LANDING_PATH', variable_get('pinserver_plus_landing_path', '')); //relative path where module will redirect user after all processing complete
+define('PIN_SUPPORT_CONTACT', variable_get('pinserver_plus_support_contact', ''));  //who to contact if visitor has authentication issues
+define('PIN_AUTH_STR', variable_get('pinserver_plus_auth_str', '')); //String to check whether using just PIN or PIN with AuthzProxy
+define('PIN_HASH_HUID', variable_get('pinserver_plus_hash_huid', 0)); //Determine whether to encrypt Harvard id before passing to $_SESSION. Defaults is no.
+define('PIN_APP_NAME', variable_get('pinserver_plus_app_name', '')); //application name given by directory services
+define('PIN_TARGET', variable_get('pinserver_plus_target', '')); //application name given by directory services
+define('PIN_SALT', variable_get('pinserver_plus_salt', '')); // salt for hashing HUID
+define('PIN_LDAP_URL', variable_get('pinserver_plus_ldap_url', ''));
+define('PIN_LDAP_USER', variable_get('pinserver_plus_ldap_user', ''));
+define('PIN_LDAP_PASSWORD', variable_get('pinserver_plus_ldap_password', ''));
+define('PIN_IP_VAL', variable_get('pinserver_plus_ip_validation', 0)); //Validate IP address or not. Reinhard: Masha in directory services says don't validate ip. Can cause vpn/tunneling problems. 
+define('GPG_DIR', variable_get('pinserver_plus_gpg_dir', dirname(__FILE__) . '/.gnupg')); //absolute path to directory to verify detached signature
+define('GPG_BIN', variable_get('pinserver_plus_gpg_bin', '/usr/bin/gpg')); //absolute path to gpg binary
+define('GPG_ERROR_LOG', variable_get('pinserver_plus_error_log', '/tmp/gpgerror'));  //absolute path (file included) to gpp stderr output for testing
+
+module_load_include('inc', 'pinserver_plus', 'includes/pinserver_plus.api');
+
+/**
+ * Implementation of hook_menu(). 
+ */ 
+function pinserver_plus_menu() {
+  $path = drupal_get_path('module', 'pinserver_plus');
+  $items = array();
+  
+  $items[PIN_TARGET] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'pinserver_plus_checkuser',
+    'access callback' => TRUE,
+  );
+  
+  $items['pinserver_plus/error'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => 'Authentication Error',
+    'page callback' => 'pinserver_plus_error',
+    'access callback' => TRUE,
+  );
+    
+  $items['admin/settings/pinserver_plus'] = array(
+    'title' => 'Pinserver Plus',
+    'description' => 'Modify Harvard Pinserver Plus configuration, access, and logging',
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 0,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pinserver_plus_config'),
+    'access arguments' =>  array('administer pinserver_plus'),
+    'file' => 'pinserver_plus.admin.inc',
+    'file path' => $path,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_permission()
+ *
+ * @return array - permissions set for the pinserver_plus module
+ */
+function pinserver_plus_permission() {
+  return array(
+    'administer pinserver_plus' => array(
+      'title' => t('Administer Pin server plus module'),
+      'description' => t('Administer the Pin server plus module')
+    )
+  );
+}
+
+/*
+ * Implementation of hook_theme()
+ */
+function pinserver_plus_theme() {
+  return array(
+    'pinserver_plus_token_error' => array(
+      'arguments' => array('values' => NULL)
+    ),
+  );
+}
+
+/**
+ * Redirect user to PIN login url  
+ */ 
+function pinserver_plus_redirect() {
+  $pin_redirect = PIN_URL . '?__authen_application=' . PIN_APP_NAME;
+  drupal_goto($pin_redirect);
+}
+
+/**
+ * First function called after user has authenticated via pinserver_plus and returned to site
+ */
+function pinserver_plus_checkuser() { // changed from pinserver_plus_check_user to pinserver_plus_checkuser, as the former looks like a hook to Coder.  BRS 2012-10-18
+
+  // First, parse and validate the PIN token.
+  $token_data = pinserver_plus_check_token();
+ 
+  // If any errors are returned, redirect to an error page.
+  if (is_array($token_data) && count($token_data['errors']) > 0) {
+    $errors = implode(',', array_unique($token_data['errors']));
+    drupal_goto("pinserver_plus/error/token/$errors");
+    exit();
+  }
+  //if successful pin authentication, place the encrypted harvard uid into a session array
+  $_SESSION['pinserver_plus']['huid'] = $token_data['user_id'];
+  //add time value to session array
+  $_SESSION['pinserver_plus']['reg_time'] = REQUEST_TIME;
+  
+  
+  //hook for dynamic landing path, if no hooks fired, then use static landing path
+  $path = module_invoke_all('pinserver_plus_landing_path');
+  $landing_path = !empty($path) ? end($path) : PIN_LANDING_PATH;
+  
+  //invoke hook_pinserver after sucessful pin login and token authentication
+  module_invoke_all('pinserver');
+
+  //redirect user to landing page that was set in pinserver_plus configuration page
+  drupal_goto($landing_path);
+}
+ 
+/**
+ * This function prepares the unencrypted PIN v1 token for authentication.
+ * @return authentication parameters and signature in a single array. 
+ */  
+function pinserver_plus_prepare_pin_v1_token() {
+  $values = array();
+
+  // Collect URL parameters
+  $app = $_GET['__authen_application'];
+  $user_id = $_GET['__authen_huid'];
+  $proxy_id = "";
+  $ip = $_GET['__authen_ip'];
+  $time = $_GET['__authen_time'];
+  $pgp_signature = $_GET['__authen_pgp_signature'];
+  $pgp_version = $_GET['__authen_pgp_version'];      
+
+  // Construct the auth token from the returned URL arguments from PIN server.
+  $values['token'] = $app . "|" . $user_id . "|" . $proxy_id . "|" . $ip . "|" . $time;
+
+  // The signature is passed as is. 
+  $values['pgp_signature'] = $pgp_signature;
+  
+  // User ID is returned as a hash for safer storage.
+  $values['user_id'] = (PIN_HASH_HUID === 1) ? md5($user_id) : $user_id;
+
+  // Time must be converted into unix timestamp.  
+  $exploded_time = explode(" ", $time);
+  $values['time'] = strtotime($exploded_time[1] . " " . $exploded_time[2] . " " . $exploded_time[5] . " " . $exploded_time[3]);
+
+  // Client IP is returned as is. 
+  $values['ip'] = $ip;
+
+  // App Name is returned as is. 
+  $values['app'] = $app;
+
+  // ID type is returned as PIN. 
+  $values['login_type'] = 'PIN';
+  
+  //set appropriate good signature string for this type of token
+  $values['good_sig'] = PIN_AUTH_STR;
+
+  return $values;
+}
+
+/**
+ * This function prepares the unencrypted PIN v2 token for authentication.
+ * @return authentication parameters and signature in a single array. 
+ */  
+function pinserver_plus_prepare_pin_v2_token($pin_parameters, $pin_signature) {
+  $values = array();
+
+  // Deconstruct parameters from the authentication token.
+  $token_array = explode($pin_parameters, '|');
+
+  // The token data is passed as is.
+  $values['token'] = $pin_parameters;
+
+  // The signature is passed as is. 
+  $values['pgp_signature'] = $pgp_signature;
+  
+  // App Name is returned as is. 
+  $values['app'] = $token_array[0];
+
+  // User ID is returned as a hash for safer storage.
+  $values['user_id'] =  (PIN_HASH_HUID === 1) ? md5($token_array[1]) : $token_array[1];
+
+  // Unused parameter proxy_id
+  // $values['proxy_id'] = $token_array[2];
+
+  // Client IP is returned as is. 
+  $values['ip'] = $token_array[3];
+
+  // Time must be converted into unix timestamp.  
+  $exploded_time = explode(" ", $token_array[4]);
+  $values['time'] = strtotime($exploded_time[1] . " " . $exploded_time[2] . " " . $exploded_time[5] . " " . $exploded_time[3]);
+
+  // Unused parameter "blank"
+  // $token_array[5]
+
+  // ID type is returned as is. 
+  $values['login_type'] = $token_array[6];
+  
+  //set appropriate good signature string for this type of token
+  $values['good_sig'] = PIN_AUTH_STR;   
+
+  return $values;
+}
+
+
+/**
+ * pinserver_plus_check_token()
+ *
+ * This function serves to check all components of the returned token in compliance with the 
+ * Harvard UIS procedures speficied at: http://www.pin.harvard.edu/dev-guide-token.shtml
+ * It is instantiated when the user has just logged in via the Harvard PIN server and has now 
+ * been returned to the Drupal site
+ *
+ * @return if the detached signature is deemed good, it returns "pinserver_plus_checkuser($user_id)". Otherwise
+ * it prohibits the user from logging in.
+ */
+function pinserver_plus_check_token() {
+
+  // Initialize the return values.
+  $return = array('errors' => array());
+
+  /*
+   * Prepare token differently depending on the token type and version
+   */
+  // Pin Token Version 2
+  if ($pin_parameters = $_GET['__authen_parameters'] && $pin_signature = $_GET['__authen_pgp_signature']) {
+    $values = pinserver_plus_prepare_pin_v2_token($pin_parameters, $pin_signature);
+  }
+  // Pin Token Version 1
+  elseif ($_GET['__authen_huid']) {
+    $values = pinserver_plus_prepare_pin_v1_token();
+  }
+  else {
+    drupal_goto("pinserver_plus/error/token/unrecognized-url");
+    exit();
+  }
+  
+  $pgp_message = "-----BEGIN PGP SIGNED MESSAGE-----" . "\n";
+  $pgp_message .= "Hash: SHA1" . "\n";
+  $pgp_message .= "\n";
+  $pgp_message .= $values['token'] . "\n";
+  $pgp_message .= "-----BEGIN PGP SIGNATURE-----" . "\n";
+  $pgp_message .= "Version: 5.0" . "\n";
+  $pgp_message .= "\n";
+  $pgp_message .= $values['pgp_signature'] . "\n";
+  $pgp_message .= "-----END PGP SIGNATURE-----" . "\n";
+
+  $stdout = "";
+  $stderr = "";
+
+  // Use gnupg to verify signature.
+  $descriptorspec = array(
+    0 => array('pipe', 'r'), // stdin
+    1 => array('pipe', 'w'), // stdout
+    2 => array('pipe', 'w') // stderr
+  );
+
+   $process = proc_open("gpg --homedir '" . GPG_DIR . "' --verify", $descriptorspec, $pipes);
+   
+  if (!is_resource($process)) {
+    $values['errors'][] = 'signature';
+    $values = implode(',', array_unique($values['errors']));
+    drupal_goto("pinserver_plus/error/token/$values");
+    exit();
+  }
+
+ fwrite($pipes[0], $pgp_message);
+  fclose($pipes[0]);
+  fclose($pipes[1]);
+
+  // read stderr ;
+  while (!feof($pipes[2])) {
+    $stderr .= fgets($pipes[2], 1024);
+  }
+  fclose($pipes[2]);
+  $return_value = proc_close($process);
+
+  /** 
+   * Save errors to file if set in configuration options and file exists. 
+   * File should be placed below root, recommended only for development/testing. 
+   */
+  if (GPG_ERROR_LOG !== '') {
+    $fp = fopen(GPG_ERROR_LOG, 'w');
+    fwrite($fp, $stderr);
+    fclose($fp);
+  }
+
+  // If good signature statement is not found within gpg output 
+  // or exit code from process is not 0, then it is a bad signature. 
+  if (strpos($stderr,  $values['good_sig']) === FALSE || $return_value != 0) {
+    print "Good[{$values['good_sig']}] Mine[$stderr]";
+    $values['errors'][] = 'signature'; 
+  }
+
+  /*
+  Now that PGP Signature has been verified, all other token components
+  that require validation must be processed, as specified by the HU directory
+  services developer's manual: http://www.pin.harvard.edu/dev-guide-token.shtml
+  This includes checking the following URL parameters: 
+  1) __authen_application / "Application Id" must match the application name
+  2) __authen_ip / "Ip Address" must match the IP address of the current user
+  3) __authen_time / "Timestamp" is valid and not more than a few minutes old
+  */
+
+  // Verify application name.
+  if ($values['app'] != PIN_APP_NAME) {
+    $values['errors'][] = 'name';
+  }  
+  
+  if (PIN_IP_VAL == 1) {
+    // Verify current user's IP address.
+    if ( $values['ip'] !== $_SERVER['REMOTE_ADDR'] ) {
+      $values['errors'][] = 'ip-mismatch';
+    }
+  }
+  
+  // Verify time parameter is not longer than 2 minutes old. 
+  // The PHP abs() function converts integers to absolute values (unsigned).
+  // Subtract timestamp value sent by PIN server from the current time (on web server)
+  // 120 equals 2 minutes; could change this to 60 but no more than 180
+  if (abs($values['time'] - REQUEST_TIME) > 120) {
+    $values['errors'][] = 'time-elapsed';
+  }
+  //echo "<pre>"; print_r($values); die;
+  return $values; 
+}
+
+/**
+ * Function to check system settings
+ */
+function pinserver_plus_check_system_settings() {  
+  
+  $settings = array(
+  'PIN_URL' => PIN_URL,
+  'PIN_LANDING_PATH' =>  PIN_LANDING_PATH,
+  'PIN_AUTH_STR' => PIN_AUTH_STR,
+  'GPG_DIR' => GPG_DIR,
+  'GPG_BIN' => GPG_BIN,
+  );
+
+  $info = array(
+    'value' => TRUE,
+    'message' => '',
+  );
+  
+  //check to see if all settings are set
+  foreach ($settings as $key => $setting) {
+    if (empty($setting)) {
+      $missing_settings[] = strtolower($key);      
+    }    
+  }
+  if (count($missing_settings)) {
+    $message = 'ALERT: scholar pinserver_plus is missing system settings: ';
+    foreach ($missing_settings as $setting) {
+      $message .= $setting . ' ';
+    }
+    $info['value'] = FALSE;
+    $info['message'] = $message . '. ';
+  }
+
+  if (!is_dir(GPG_DIR)) {
+    $message = 'The system path for gpg_dir directory is invalid or does not exist.';
+    $info['value'] = FALSE;
+    $info['message'] .= $message;
+  }
+ 
+  return $info;
+}
+
+/**
+ * Log error and display message
+ * @param  string $type - string to identify message type to display
+ * @param  string $values - comma separated list of errors encountered
+ */
+function pinserver_plus_error($type, $values) {
+  switch ($type) {
+    case 'token':
+      //log the errors
+      error_log("The pinserver_plus module has errored in processing the token in the following categories: $values");
+      return theme('pinserver_plus_token_error', explode(',', $values));
+      break;
+    default:
+      return '';
+  }
+}
+
+/* 
+ * theme_pinserver_plus_token_error()
+ * @param  array $values - all errors that occured due to a problem with the token or token processing. 
+ */
+function theme_pinserver_plus_token_error($values = NULL) {
+  $message = '<p>Communication with the Harvard PIN server failed.';
+  if (in_array('ip-mismatch', $values)) {
+    error_log("The pinserver_plus module found an ip-mismatch comparing url IP {$_GET['__authen_ip']} to remote address {$_SERVER['REMOTE_ADDR']} ");
+    $message .= ' Note: Use of a VPN or tunnel connection may cause problems with PIN authentication.';
+  }
+  $message .= ' Please ' . l('try again', PIN_URL . '?__authen_application=' . PIN_APP_NAME);
+  if (valid_email_address(PIN_SUPPORT_CONTACT)) {
+    $message .= ' or ' . l('contact us.', 'contact');
+  }
+  $message .= '.</p>';
+  return $message;
+}
+
+
+/**
+ * Implementation of hook_pinserver().
+ */
+function pinserver_plus_pinserver() {
+  global $user;
+  $huid = pinserver_plus_get_session_huid();
+  $hashed_huid = salted_md5($huid);
+  $uid = pinserver_plus_check_row($hashed_huid);
+  if (strlen($hashed_huid) && strlen($uid)) {
+    error_log("We already have a drupal user corresponding to this hashed huid."); 
+    $user = user_load($uid);
+    error_log("Hashed HUID: " . $hashed_huid . " -> Drupal UID: " . $uid);
+    if ( $user->name == $hashed_huid ) {
+      error_log("Drupal username looks like a hashed huid... let's update it with LDAP info.");
+      update_pinuser($user, $huid);
+    }
+  } 
+  else {
+    error_log("We haven't seen this huid before: " . $huid);
+    error_log("Let's create a new drupal account for it...");
+    $user = create_pinuser($huid);
+    error_log("Great. Now let's record the mapping between these 2 ids so we can reuse it next time.");
+    error_log("Hashed HUID: " . $hashed_huid . " -> Drupal UID: " . $user->uid);
+    pinserver_plus_add_row($user->uid, $hashed_huid);
+  }
+  // Update the user table timestamp noting user has logged in.
+  // This is also used to invalidate one-time login links.
+  $user->login = REQUEST_TIME;
+  // was: db_query("UPDATE {users} SET login = %d WHERE uid = %d", $user->login, $user->uid);
+  db_update('users')
+    ->fields(array('login' => $user->login))
+    ->condition('uid', $user->uid)
+    ->execute();
+  // Regenerate the session ID to prevent against session fixation attacks.
+  drupal_session_regenerate();
+  // Remove pinserver session variables
+  pinserver_plus_remove_session();
+}
+
+/**
+ * Update existing drupal user for given Harvard PIN user.  Look up
+ * harvard user in LDAP to update drupal username and email.  Should
+ * only be called for old (pre August 2012) accounts before we had
+ * access to LDAP (when username and email were based on ugly hashed
+ * huid).
+ */
+function update_pinuser($user, $huid) { // renamed update_pin_user to suppress Coder error
+  $ldapinfo = get_ldap_info($huid);
+  $new_username = generate_username($ldapinfo);
+  return save_pinuser(
+    $user,
+    array(
+      'name' => $new_username, //'somename',
+      'mail' => $ldapinfo['email'],
+    )
+  );
+}
+
+/**
+ * Create a new drupal user for given Harvard PIN user.
+ * Look up harvard user in LDAP to create drupal username and email.
+ */
+function create_pinuser($huid) { // renamed create_pin_user to suppress Coder error
+  $ldapinfo = get_ldap_info($huid);
+  $new_username = generate_username($ldapinfo);
+  return save_pinuser(
+    new stdClass(),
+    array(
+      'name' => $new_username, //'somename',
+      'pass' => user_password(),
+      'mail' => $ldapinfo['email'],
+      'roles' => array(),
+      'status' => 1,
+    )
+  );
+}
+
+/**
+ * Save new or existing pin-based drupal user to the database.
+ * Check to make sure username and email are not already taken and increment if necessary.
+ */
+function save_pinuser($user, $properties) { // renamed save_pin_user to suppress Coder error
+  if ( username_already_taken($properties['name']) ) {
+    $properties['name'] = increment_username($properties['name']);
+    return save_pinuser($user, $properties);
+  } 
+  elseif ( email_already_taken($properties['mail']) ) {
+    $properties['mail'] = increment_email($properties['mail']);
+    return save_pinuser($user, $properties);
+  } 
+  else {
+    return user_save($user, $properties);
+  }
+};
+
+
+function username_already_taken($username) {
+  // was: return db_result(db_query("SELECT count(*) from {users} WHERE name = '%s'", $username));
+  return db_query("SELECT count(*) from {users} WHERE name = :name", array(':name' => $username))->fetchField();
+}
+
+function email_already_taken($email) {
+  // was: return db_result(db_query("SELECT count(*) from {users} WHERE mail = '%s'", $email));
+  return db_query("SELECT count(*) from {users} WHERE mail = :mail", array(':mail' => $email))->fetchField();
+}
+
+/**
+ * Crude suffix generation for duplicate username handling.
+ * If last characters are numbers, increment by 1 and return. If they are not, append " 1"
+ */
+function increment_username($name) {
+  $matches = array();
+  if (preg_match('/^(\D+) (\d+)$/',  $name, $matches)) {
+      $base_name = $matches[1];
+      $number = $matches[2]+1;
+      return $base_name . " " . $number;
+  } 
+  else {
+    return $name . " 1";
+  }
+}
+
+/**
+ * Crude suffix generation for duplicate email handling.
+ * Uses plus addressing.
+ * If last characters are plus sign followed by numbers, increment by 1 and return. If they are not, append "+1"
+ */
+
+function increment_email($email) {
+  $matches = array();
+  if (preg_match('/^(.+?)\+(\d+)(\@.+?)$/',  $email, $matches)) {
+      $base_name = $matches[1];
+      $number = $matches[2]+1;
+      $domain = $matches[3];
+      return $base_name . "+" . $number . $domain;
+  } 
+  else {
+    return preg_replace("/\@/", "+1@", $email);
+  }
+}
+
+/**
+ * Figure out where to redirect the user after pin authentication.
+ */
+function pinserver_plus_landing_path() {
+  $landing_path = $_COOKIE['pin_dest'];
+  if ( isset($_GET['destination']) ) {
+    $landing_path=$_GET['destination'];
+    error_log("Got destination from url: " . $landing_path);
+  }
+  #error_log("Landing path: " . $landing_path);
+  return $landing_path;
+}
+
+/**
+ * Get name and email from ldap for given huid.
+ * TODO: move connection information to configuration. (soon!)
+ */
+function get_ldap_info($huid) {
+  $ldap_info = array();
+  error_log("Host: " . $_SERVER['HTTP_HOST']);
+  $url = PIN_LDAP_URL;
+  error_log("Getting ldap info from " . $url);
+  $username = PIN_LDAP_USER;
+  $password = PIN_LDAP_PASSWORD;
+  ldap_set_option(NULL, LDAP_OPT_DEBUG_LEVEL, 7);
+  $ds = ldap_connect($url);
+  if ( !$ds ) {
+    throw new Exception("Couldn't connect to LDAP.");
+  }
+  ldap_set_option($ds, LDAP_OPT_PROTOCOL_VERSION, 3);
+  ldap_set_option($ds, LDAP_OPT_REFERRALS, 0); 
+  $db = ldap_bind($ds, $username, $password);
+  if (! $db) {
+    throw new Exception("Couldn't bind to LDAP.");
+  }
+  $search_dn     = "ou=people, o=Harvard University Core, dc=huid, dc=harvard, dc=edu";
+  $search_filter =  "(&(harvardeduidnumber=" . $huid . "))";
+  $sr=ldap_search($ds, $search_dn, $search_filter);  
+  #echo "\nSearch result is " . $sr . "<br />";
+  #echo "\nNumber of entries returned is " . ldap_count_entries($ds, $sr) . "<br />";
+  $info = ldap_get_entries($ds, $sr);
+  #echo "\nData for " . $info["count"] . " items returned:<p>";
+  #var_dump($info);
+  for ($i=0; $i<$info["count"]; $i++) {
+    $ldap_info['last']   = $info[$i]["sn"][0];
+    $ldap_info['first']  = $info[$i]["givenname"][0];
+    $ldap_info['middle'] = $info[$i]["harvardedumiddlename"][0];
+    $ldap_info['email']  = $info[$i]["mail"][0];
+  }
+  error_log("Got this info: " . $ldap_info['last']);
+  return $ldap_info;
+}
+
+/**
+ * Create an attractive drupal username based on LDAP information.
+ */
+function generate_username($ldap_info) {
+  return $ldap_info['first'] . ' ' . $ldap_info['last'];
+}
+
+/**
+ * Checks database table for user
+ *
+ * @param encrypted $hashed_huid
+ * @return drupal user id
+ */
+function pinserver_plus_check_row($hashed_huid) {
+  // was: return db_result(db_query("SELECT uid FROM {pinserver_plus} WHERE huid = '%s'", $hashed_huid));
+  return db_query("SELECT uid FROM {pinserver_plus} WHERE huid = :huid", array(':huid' => $hashed_huid))->fetchField();
+}
+
+/**
+ * Adds a new row to huid to drupal user id mapping database table.
+ */
+function pinserver_plus_add_row($uid, $hashed_huid = NULL) {
+  $object = new stdClass();
+  $object->uid = (int)$uid;
+  $object->huid= ($hashed_huid) ? $hashed_huid : salted_md5( pinserver_plus_get_session_huid());
+  $object->reg_time = REQUEST_TIME;
+  // was: if (!db_result(db_query("SELECT uid FROM {pinserver_plus} WHERE huid = '%s'", salted_md5( pinserver_get_session_huid())))) {
+  if (!db_query("SELECT uid FROM {pinserver_plus} WHERE huid = :huid", array(':huid' => salted_md5( pinserver_plus_get_session_huid())))->fetchField()) { // check that this is right with bang at beginning....  BRS
+    drupal_write_record('pinserver_plus', $object);
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ *  create md5 hash of the huid so we can securely store that semi-sensitive information.
+ */
+function salted_md5($string) {
+  $dash_suffix=PIN_SALT;
+  return md5($string . $dash_suffix);
+}
+
+/**
+ * Implementation of hook_form_alter : adds pinserver_plus login to the login forms.
+ */
+function pinserver_plus_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'user_login_block' || $form_id == 'user_login') {
+    drupal_add_css(drupal_get_path('module', 'pinserver_plus') . '/pinserver_plus.css', 'module');
+    drupal_add_js('misc/jquery.cookie.js'); // is this right?
+    drupal_add_js(array('app' => PIN_APP_NAME), 'setting');
+    drupal_add_js(array('email' => PIN_SUPPORT_CONTACT), 'setting');
+    drupal_add_js(drupal_get_path('module', 'pinserver_plus') . '/pinserver_plus.js');
+
+    if (!empty($form_state['post']['pinserver_plus_identifier'])) {
+      $form['name']['#required'] = FALSE;
+      $form['pass']['#required'] = FALSE;
+      unset($form['#submit']);
+      $form['#validate'] = array('pinserver_plus_login_validate');
+    }
+
+    $items = array();
+
+    // here's the prob. block gets cached.
+    // we could use js to set a cookie
+    // OK, that's what we're doing now (see pinserver_plus.js)
+
+    #$_SESSION['destination'] = request_uri(); //drupal_get_destination();	
+    #error_log("reinhard user.module: set SESSION destination: " . $_SESSION['destination']);
+
+    if ( PIN_APP_NAME ) {
+      // only prompt if we actually have an app registered.
+      $items[] = l(t('Log in using Harvard PIN'), 'https://www.pin1.harvard.edu/pin/authenticate?__authen_application=' . PIN_APP_NAME);
+    }
+
+    $form['pinserver_plus_links'] = array(
+      '#value' => theme('item_list', $items),
+      '#weight' => 1,
+    );
+    $form['links']['#weight'] = 10;
+
+    $form['pinserver_plus.return_to'] = array('#type' => 'hidden', '#value' => url('pinserver_plus/authenticate', array('absolute' => TRUE, 'query' => drupal_get_destination())));
+  }
+  elseif ($form_id == 'user_register' && isset($_SESSION['pinserver_plus']['values'])) {
+    // We were unable to auto-register a new user. Prefill the registration
+    // form with the values we have.
+    $form['name']['#default_value'] = $_SESSION['pinserver_plus']['values']['name'];
+    $form['mail']['#default_value'] = $_SESSION['pinserver_plus']['values']['mail'];
+    // If user_email_verification is off, hide the password field and just fill
+    // with random password to avoid confusion.
+    if (!variable_get('user_email_verification', TRUE)) {
+      $form['pass']['#type'] = 'hidden';
+      $form['pass']['#value'] = user_password();
+    }
+    $form['auth_pinserver_plus'] = array('#type' => 'hidden', '#value' => $_SESSION['pinserver_plus']['values']['auth_pinserver_plus']);
+    $form['pinserver_plus_display'] = array(
+      '#type' => 'item',
+      '#title' => t('Your Pinserver Plus'),
+      '#description' => t('This Pinserver Plus will be attached to your account after registration.'),
+      '#value' => check_plain($_SESSION['pinserver_plus']['values']['auth_pinserver_plus']),
+    );
+  }
+  return $form;
+}
+
