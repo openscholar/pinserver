@@ -110,8 +110,7 @@ function pinserver_config() {
   );
 
 
-  //pinsever GPG logging fields
-
+  // Pinsever GPG logging fields
   $form['pinserver_logging'] = array(
     '#type' => 'fieldset',
     '#title' => t('Harvard Pinserver Logging'),
@@ -137,6 +136,38 @@ function pinserver_config() {
     '#required' => FALSE,
     '#default_value' => variable_get('pinserver_error_log', '/tmp/pinserver_gpgerror.log'),
     '#description' => t('Optionally specify full filename and path from server\'s root directory (not the website\'s root directory). The file should always be below the root directory, and it is recommended only for development sites. Include the first / to indicate the root directory of the webserver.'),
+  );
+
+  // Pinserver LDAP fields.
+  $form['pinserver_ldap'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Harvard Pinserver LDAP'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $form['pinserver_ldap']['pinserver_plus_ldap_hostname'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Harvard LDAP hostname'),
+    '#required' => TRUE,
+    '#default_value' => variable_get('pinserver_plus_ldap_hostname, ''),
+    '#description' => t('Enter the LDAP URL given to you by Harvard Directory Services, something like "ldaps://hu-ldap.harvard.edu".' ),
+  );
+
+  $form['pinserver_ldap']['pinserver_plus_ldap_uid'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Harvard LDAP user string'),
+    '#required' => TRUE,
+    '#default_value' => variable_get('pinserver_plus_ldap_uid', ''),
+    '#description' => t('Enter the LDAP uid given to you by Harvard Directory Services.'),
+  );
+
+  $form['pinserver_ldap']['pinserver_plus_ldap_bind_password'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Harvard LDAP password'),
+    '#required' => TRUE,
+    '#default_value' => variable_get('pinserver_plus_ldap_bind_password', ''),
+    '#description' => t('Enter the LDAP password given to you by Harvard Directory Services.' ),
   );
 
   return system_settings_form($form);
