@@ -14,7 +14,7 @@ function pinserver_config() {
     '#type' => 'fieldset',
     '#title' => t('Harvard Pinserver Configuration'),
     '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
+    '#collapsed' => TRUE,
   );
 
   $form['pinserver']['pinserver_pin_url'] = array(
@@ -115,7 +115,7 @@ function pinserver_config() {
     '#type' => 'fieldset',
     '#title' => t('Harvard Pinserver Logging'),
     '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
+    '#collapsed' => TRUE,
   );
 
   $form['pinserver_logging']['pinserver_error_logging_enabled'] = array(
