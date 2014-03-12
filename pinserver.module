@@ -43,9 +43,9 @@ function pinserver_menu() {
     'access callback' => TRUE,
   );
 
-  $items['pinserver_ldap/%'] = array(
+  $items['pinserver/ldap/%'] = array(
     'page callback' => 'pinserver_ldap_page',
-    'page arguments' => array(1),
+    'page arguments' => array(2),
     'access arguments' => array('administer site configuration'),
     'title' => 'LDAP'
   );
@@ -60,11 +60,10 @@ function pinserver_ldap_page($huid) {
   $message = t('No valid HUID: @huid', array('@huid' => $huid));
 
   if (!empty($huid) && is_numeric($huid)) {
-    $message = t('Looking up @huid... <br/>', array('@huid' => $huid));
-    modlue_load_include('inc', 'pinserver', 'includes/ldap');
-    $attributes = pinserver_ldap_attributes_from_huid($huid);
-    dpm($attributes);
-    $message .= $attributes['success'] ? 'GOOD!' : 'bad.';
+    $message = t('Looking up huid @huid... <br/>', array('@huid' => $huid));
+    module_load_include('inc', 'pinserver', 'includes/ldap');
+    $attributes = getLDAPUser($huid);
+    $message .= $attributes;
   }
 
   $build = array(
@@ -73,7 +72,6 @@ function pinserver_ldap_page($huid) {
 
   return $build;
 }
-
 
 /**
  * Implements hook_permission().
