@@ -73,6 +73,9 @@ function pinserver_authenticate_menu_alter(&$items) {
  */
 function pinserver_authenticate_user_login_access() {
   if (user_is_logged_in()) {
+    if (isset($_GET['destination'])) {
+      drupal_goto();
+    }
     return false;
   }
 
