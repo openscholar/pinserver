@@ -143,9 +143,16 @@ function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
   $form['pass']['#description'] .= t(' <br />!request', array('!request' => l('Forgot your password?', 'user/password')));
 
   if (pinserver_get_user_huid()) {
-    if (isset($form_state['build_info']['args'][0]) && $form_state['build_info']['args'][0] == 'pin-login') {
+    // Check to make sure they can't be logged in.
+    if ($uid = pinserver_authenticate_get_uid_from_huid(pinserver_get_user_huid())) {
+      $GLOBALS['user'] = user_load($uid);
+      user_login_finalize();
+      drupal_goto('user');
+    }
+    elseif (isset($form_state['build_info']['args'][0]) && $form_state['build_info']['args'][0] == 'pin-login') {
       $form['#submit'][] = 'pinserver_authenticate_user_login_submit';
     }
+
     return;
   }
 
