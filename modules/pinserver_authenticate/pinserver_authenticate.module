@@ -152,6 +152,10 @@ function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
     elseif (isset($form_state['build_info']['args'][0]) && $form_state['build_info']['args'][0] == 'pin-login') {
       $form['#submit'][] = 'pinserver_authenticate_user_login_submit';
     }
+    // Given PIN has no user linked to it
+    else {
+      drupal_goto('user/pin/create', array('query' => array('destination' => 'user')));
+    }
 
     return;
   }
