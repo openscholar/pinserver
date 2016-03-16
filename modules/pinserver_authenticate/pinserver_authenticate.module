@@ -154,6 +154,7 @@ function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
     }
     // Given PIN has no user linked to it
     else {
+      unset($_GET['destination']);
       drupal_goto('user/pin/create', array('query' => array('destination' => 'user')));
     }
 
