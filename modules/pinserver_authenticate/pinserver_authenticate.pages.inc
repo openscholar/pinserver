@@ -112,7 +112,7 @@ function pinserver_authenticate_user_create() {
 
   $output['login'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Login in to link my account now.'),
+    '#title' => t('Log in in to link my account now.'),
     '#collapsible' => true,
     '#collapsed' => true,
     '#attributes' => array(
