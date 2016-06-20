@@ -117,8 +117,8 @@ function pinserver_authenticate_user_create() {
     '#collapsed' => false,
     '#attributes' => array(
       'class' => array(
-        'collapsible',
-        'collapsed',
+//        'collapsible',
+//        'collapsed',
         'pin-fieldset'
       )
     ),
