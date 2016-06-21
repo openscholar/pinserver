@@ -106,19 +106,19 @@ function pinserver_authenticate_user_create() {
   }
 
   $output['notice'] = array(
-    '#markup' => t('You don\'t have an OpenScholar account linked with your Harvard University ID (HUID) yet.<br />'),
+    '#markup' => t('After you enter your OpenScholar ID and password and click log in, your OpenScholar account will be linked with Harvard Key. You\'ll only have to do this once.') . '<br>',
     '#weight' => -3,
   );
 
   $output['login'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Log in in to link my account now.'),
-    '#collapsible' => true,
-    '#collapsed' => true,
+//    '#title' => t('Login in to link my account now.'),
+    '#collapsible' => false,
+    '#collapsed' => false,
     '#attributes' => array(
       'class' => array(
-        'collapsible',
-        'collapsed',
+//        'collapsible',
+//        'collapsed',
         'pin-fieldset'
       )
     ),
@@ -134,8 +134,8 @@ function pinserver_authenticate_user_create() {
   $menu_item = menu_get_item('site/register');
   if ($menu_item['access'] && vsite_vsite_exists_access()) {
     $output['new_site'] = array(
-      '#prefix' => '<span id="pin-register" class="pin-button">',
-      '#markup' => l('Create an OpenScholar site and account for my HUID', 'site/register'),
+      '#prefix' => '<span id="pin-register">',
+      '#markup' => l('Don’t have an OpenScholar website? Create one here.', 'site/register'),
       '#suffix' => '</span>',
       '#weight' => -1
     );
@@ -143,18 +143,11 @@ function pinserver_authenticate_user_create() {
   else {
     $output['new_site'] = array(
       '#prefix' => '<span id="pin-no-user">',
-      '#markup' => t('If you don\'t have an OpenScholar account and need one, ask the site manager to create one for you.'),
+      '#markup' => '<br>' . t('If you don\'t have an OpenScholar account and need one, ask the site manager to create one for you.'),
       '#suffix' => '</span>',
       '#weight' => -1
     );
   }
-
-  $output['nevermind'] = array(
-    '#prefix' => '<span id="pin-nvm" class="pin-button">',
-    '#markup' => l('Back', 'user/pin/cancel', array('query' => $query)),
-    '#suffix' => '</span>',
-    '#weight' => 0,
-  );
 
   return $output;
 }
