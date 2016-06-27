@@ -71,9 +71,6 @@ fieldset.pin-fieldset legend:hover a,
 .not-logged-in.page-user #columns #main-content h1#page-title {
   margin-bottom: 1em !important;
 }
-#main-content > #main-content-header > #page-title {
-  white-space: nowrap;
-}
 
 #footer .footer-login {
   display: none !important;
