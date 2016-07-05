@@ -184,8 +184,8 @@ function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
     $form['pin-fieldset'] = array(
       '#type' => 'fieldset',
       '#title' => t('Login with your OpenScholar account'),
-      '#collapsible' => FALSE,
-      '#collapsed' => FALSE,
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
       'name' => $form['name'],
       'pass' => $form['pass'],
       'actions' => $form['actions']
