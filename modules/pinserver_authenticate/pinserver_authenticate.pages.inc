@@ -135,7 +135,7 @@ function pinserver_authenticate_user_create() {
   if ($menu_item['access'] && vsite_vsite_exists_access()) {
     $output['new_site'] = array(
       '#prefix' => '<span id="pin-register">',
-      '#markup' => l('Don’t have an OpenScholar website? Create one here.', 'site/register'),
+      '#markup' => l('Don’t have an OpenScholar account?', 'http://docs.openscholar.harvard.edu/getting-started-with-openscholar'),
       '#suffix' => '</span>',
       '#weight' => -1
     );
