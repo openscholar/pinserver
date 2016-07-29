@@ -288,7 +288,9 @@ function pinserver_authenticate_process_page(&$vars) {
 function pinserver_authenticate_vsite_access_denied($vsite) {
   $var = db_select('spaces_overrides', 'so')
         ->fields('so', array('value'))
+        ->condition('type', 'og')
         ->condition('id', $vsite->group->nid)
+        ->condition('object_type', 'variable')
         ->condition('object_id', 'login_via_pin_by_default')
         ->execute()
         ->fetchField();
