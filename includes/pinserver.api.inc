@@ -103,3 +103,20 @@ function pinserver_add_user_from_token($token_data, $use_session = FALSE){
 
   pinserver_get_user($pin_user, $use_session);
 }
+
+/**
+ * Check to see if there is a HUID attached to a given uid
+ */
+function pinserver_user_has_associated_pin($uid) {
+  $pinuser = db_select('pinserver_users', 'pin')
+    ->fields('pin', array('hashID','huid'))
+    ->condition('uid', $uid, '=')
+    ->execute()
+    ->fetchAssoc();
+  if (isset($pinuser['huid']) || isset($pinuser['hashID'])) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
