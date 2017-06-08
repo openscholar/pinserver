@@ -111,19 +111,26 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
   $fields = array(
     'reg_time' => REQUEST_TIME
   );
+  $query = db_merge('pinserver_users');
   if (strlen($huid) > 10) {
-    $fields['hashID'] = $huid;
-    $fields['huid'] = null;
+    $query->insertFields(array(
+      'hashID' => $huid,
+      'huid' => null
+    ))->updateFields(array(
+      'hashID' => $huid
+    ));
   }
   else {
-    $fields['huid'] = $huid;
-    $fields['hashID'] = null;
+    $query->insertFields(array(
+      'huid' => $huid,
+      'hashID' => null
+    ))->updateFields(array(
+      'huid' => $huid
+    ));
   }
 
   try {
-    db_merge('pinserver_users')
-      ->key(array('uid' => $uid))
-      ->fields($fields)
+    $query->key(array('uid' => $uid))
       ->execute();
     return true;
   }
@@ -132,6 +139,18 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
     error_log($e->getMessage());
     return false;
   }
+}
+
+/**
+ * Retreives the raw HUID for a given user account
+ */
+function pinserver_authenticate_get_user_huid($uid) {
+  $q = db_select('pinserver_users', 'pu')
+    ->fields('pu', array('huid'))
+    ->condition('uid', $uid)
+    ->execute();
+
+  return $q->fetchField();
 }
 
 /**
@@ -145,6 +164,10 @@ function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
   if (pinserver_get_user_huid()) {
     // Check to make sure they can't be logged in.
     if ($uid = pinserver_authenticate_get_uid_from_huid(pinserver_get_user_huid())) {
+      $pin_user = pinserver_get_user();
+      if (isset($pin_user['raw_huid'])) {
+        pinserver_authenticate_set_user_huid($uid, $pin_user['raw_huid']);
+      }
       $GLOBALS['user'] = user_load($uid);
       user_login_finalize();
       drupal_goto('user');
