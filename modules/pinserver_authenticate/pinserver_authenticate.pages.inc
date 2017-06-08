@@ -67,7 +67,13 @@ function pinserver_authenticate_pin_user_login() {
   }
   // Given PIN has a user linked to it
   elseif ($uid = pinserver_authenticate_get_uid_from_huid(pinserver_get_user_huid())) {
+    error_log('existing user linkage.');
     $GLOBALS['user'] = user_load($uid);
+    $pin_user = pinserver_get_user();
+    if (isset($pin_user['raw_huid'])) {
+      error_log("raw huid '{$pin_user['raw_huid']}' found. adding to user '$uid'");
+      pinserver_authenticate_set_user_huid($uid, $pin_user['raw_huid']);
+    }
     user_login_finalize();
     drupal_goto('user');
   }
