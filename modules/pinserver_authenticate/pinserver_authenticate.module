@@ -163,7 +163,6 @@ function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
   if (pinserver_get_user_huid()) {
     // Check to make sure they can't be logged in.
     if ($uid = pinserver_authenticate_get_uid_from_huid(pinserver_get_user_huid())) {
-      error_log('when do we hit this?');
       $pin_user = pinserver_get_user();
       if (isset($pin_user['raw_huid'])) {
         pinserver_authenticate_set_user_huid($uid, $pin_user['raw_huid']);

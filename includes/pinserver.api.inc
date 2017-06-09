@@ -96,9 +96,7 @@ function pinserver_add_user_from_token($token_data, $use_session = FALSE){
   // Places encrypted harvard uid into session array.
   $pin_user['huid'] = $token_data['user_id'];
   $pin_user['reg_time'] = time();
-  error_log('add user from token');
   if (isset($_GET['__authen_huid'])) {
-    error_log('huid found: '.$_GET['__authen_huid']);
     $pin_user['raw_huid'] = $_GET['__authen_huid'];
   }
 
