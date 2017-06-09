@@ -163,13 +163,11 @@ function pinserver_authenticate_user_create() {
  */
 function pinserver_authenticate_user_login_submit($form, $form_state) {
   if (user_is_logged_in() && $huid = pinserver_get_user_huid()) {
-    error_log('new linkage.');
     $uid = $GLOBALS['user']->uid;
 
     pinserver_authenticate_set_user_huid($uid, $huid);
     $pin_user = pinserver_get_user();
     if (isset($pin_user['raw_huid'])) {
-      error_log("linking huid:{$pin_user['raw_huid']} to uid:$uid");
       pinserver_authenticate_set_user_huid($uid, $pin_user['raw_huid']);
     }
   }

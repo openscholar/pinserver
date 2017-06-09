@@ -108,14 +108,12 @@ function pinserver_authenticate_get_uid_from_huid($huid = NULL) {
  * Links a PIN and UID together
  */
 function pinserver_authenticate_set_user_huid($uid, $huid) {
-  $fields = array(
-    'reg_time' => REQUEST_TIME
-  );
   $query = db_merge('pinserver_users');
   if (strlen($huid) > 10) {
     $query->insertFields(array(
       'hashID' => $huid,
-      'huid' => null
+      'huid' => null,
+      'reg_time' => REQUEST_TIME
     ))->updateFields(array(
       'hashID' => $huid
     ));
@@ -123,7 +121,8 @@ function pinserver_authenticate_set_user_huid($uid, $huid) {
   else {
     $query->insertFields(array(
       'huid' => $huid,
-      'hashID' => null
+      'hashID' => null,
+      'reg_time' => REQUEST_TIME
     ))->updateFields(array(
       'huid' => $huid
     ));
