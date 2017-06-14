@@ -68,6 +68,10 @@ function pinserver_authenticate_pin_user_login() {
   // Given PIN has a user linked to it
   elseif ($uid = pinserver_authenticate_get_uid_from_huid(pinserver_get_user_huid())) {
     $GLOBALS['user'] = user_load($uid);
+    $pin_user = pinserver_get_user();
+    if (isset($pin_user['raw_huid'])) {
+      pinserver_authenticate_set_user_huid($uid, $pin_user['raw_huid']);
+    }
     user_login_finalize();
     drupal_goto('user');
   }
@@ -162,6 +166,10 @@ function pinserver_authenticate_user_login_submit($form, $form_state) {
     $uid = $GLOBALS['user']->uid;
 
     pinserver_authenticate_set_user_huid($uid, $huid);
+    $pin_user = pinserver_get_user();
+    if (isset($pin_user['raw_huid'])) {
+      pinserver_authenticate_set_user_huid($uid, $pin_user['raw_huid']);
+    }
   }
 }
 
