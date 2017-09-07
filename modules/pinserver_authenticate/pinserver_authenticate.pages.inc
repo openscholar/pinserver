@@ -44,6 +44,9 @@ function pinserver_authenticate_pin_user_login() {
   }
   // Not logged in
   elseif (!pinserver_get_user_huid()) {
+
+    watchdog('pinserver', "GET: " . print_r($_GET,1));
+
     $url = 'user/pin';
     $options = array(
       'absolute' => TRUE,
