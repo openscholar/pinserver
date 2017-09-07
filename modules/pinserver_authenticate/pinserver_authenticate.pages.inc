@@ -50,6 +50,9 @@ function pinserver_authenticate_pin_user_login() {
     );
     if (isset($_GET['destination'])) {
       $options['query']['destination'] = $_GET['destination'];
+      if ($GLOBALS['base_url'] != variable_get('purl_base_domain', $GLOBALS['base_url'])) {
+        $options['query']['destination'] = variable_get('purl_base_domain') . '/' . $options['query']['destination'];
+      }
       unset($_GET['destination']);
     }
     $url = url($url, $options);
