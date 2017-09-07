@@ -44,12 +44,18 @@ function pinserver_authenticate_pin_user_login() {
   }
   // Not logged in
   elseif (!pinserver_get_user_huid()) {
+
+    watchdog('pinserver', "GET: " . print_r($_GET,1));
+
     $url = 'user/pin';
     $options = array(
       'absolute' => TRUE,
     );
     if (isset($_GET['destination'])) {
       $options['query']['destination'] = $_GET['destination'];
+      if ($GLOBALS['base_url'] != variable_get('purl_base_domain', $GLOBALS['base_url'])) {
+        $options['query']['destination'] = variable_get('purl_base_domain') . '/' . $options['query']['destination'];
+      }
       unset($_GET['destination']);
     }
     $url = url($url, $options);
