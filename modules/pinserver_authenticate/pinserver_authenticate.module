@@ -32,7 +32,7 @@ function pinserver_authenticate_menu() {
   $items['user/pin'] = array(
     'title' => 'Log in via PIN',
     'page callback' => 'pinserver_authenticate_pin_user_login',
-    'access callback' => 'pinserver_authenticate_user_login_access',
+    'access callback' => TRUE,
     'type' => MENU_CALLBACK,
     'file' => 'pinserver_authenticate.pages.inc',
   );
@@ -64,22 +64,6 @@ function pinserver_authenticate_menu_alter(&$items) {
   $items['user']['file path'] = drupal_get_path('module', 'pinserver_authenticate');
 
   $items['user/password']['type'] = MENU_CALLBACK;
-}
-
-/**
- * Refuse access to users that have authenticated.
- * Because that makes no sense.
- * @return bool
- */
-function pinserver_authenticate_user_login_access() {
-  if (user_is_logged_in()) {
-    if (isset($_GET['destination'])) {
-      drupal_goto();
-    }
-    return false;
-  }
-
-  return true;
 }
 
 /**
