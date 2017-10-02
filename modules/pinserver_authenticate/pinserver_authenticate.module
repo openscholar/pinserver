@@ -40,7 +40,7 @@ function pinserver_authenticate_menu() {
   $items['user/pin/create'] = array(
     'title' => 'Link Your Harvard Key to Your OpenScholar Account',
     'page callback' => 'pinserver_authenticate_user_create',
-    'access callback' => 'pinserver_authenticate_user_login_access',
+    'access callback' => TRUE,
     'file' => 'pinserver_authenticate.pages.inc',
   );
 
