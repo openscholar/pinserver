@@ -28,6 +28,10 @@ function pinserver_authenticate_default_user_login() {
  * See flowchart in pinserver_authenticate.module.com
  */
 function pinserver_authenticate_pin_user_login() {
+  // we're already logged in. What are we doing here?
+  if (user_is_logged_in()) {
+    drupal_goto();
+  }
   // Auth error
   if ($errors = pinserver_get_errors()) {
     foreach ($errors as $e) {
