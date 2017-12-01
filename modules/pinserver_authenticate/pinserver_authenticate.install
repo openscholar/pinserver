@@ -11,7 +11,7 @@ function pinserver_authenticate_schema() {
         'default' => 0,
       ),
       'huid' => array(
-        'description' => t("Holds the Harvard ID of returning users"),
+        'description' => t("Holds the %university ID of returning users", array('%university' => variable_get('university_name'))),
         'type' => 'varchar',
         'length' => 255,
         'not null' => FALSE,

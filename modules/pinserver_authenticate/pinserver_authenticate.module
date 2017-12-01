@@ -38,7 +38,7 @@ function pinserver_authenticate_menu() {
   );
 
   $items['user/pin/create'] = array(
-    'title' => 'Link Your Harvard Key to Your OpenScholar Account',
+    'title' => t('Link Your @university Key to Your OpenScholar Account',array('@university' => variable_get('university_name'))),
     'page callback' => 'pinserver_authenticate_user_create',
     'access callback' => TRUE,
     'file' => 'pinserver_authenticate.pages.inc',
@@ -176,7 +176,7 @@ function pinserver_authenticate_form_user_login_alter(&$form, &$form_state) {
 
   $form['pin'] = array(
     '#prefix' => '<span id="pin-login" class="pin-button">',
-    '#markup' => l('Login via Harvard University ID (HUID).', 'user/pin', array('query' => $query)),
+    '#markup' => l(t('Login via %university University ID (HUID).', array('%university' => variable_get('university_name'))), 'user/pin', array('query' => $query)),
     '#suffix' => '</span>',
     '#weight' => -1,
     '#attached' => array(
@@ -242,7 +242,7 @@ function theme_pinserver_authenticate_openscholar_login($vars) {
 function pinserver_authenticate_form_pinserver_config_alter(&$form, &$form_state) {
   $form['pinserver_authenticate'] = array(
     '#type' => 'fieldset',
-    '#title' => 'Harvard Pinserver Authentication',
+    '#title' => t('%university Pinserver Authentication', array('%university' => variable_get('university_name'))),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     'login_via_pin_by_default' => array(

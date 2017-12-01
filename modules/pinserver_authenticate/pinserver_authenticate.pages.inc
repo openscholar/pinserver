@@ -114,7 +114,7 @@ function pinserver_authenticate_user_create() {
   }
 
   $output['notice'] = array(
-    '#markup' => t('After you enter your OpenScholar ID and password and click log in, your OpenScholar account will be linked with Harvard Key. You\'ll only have to do this once.') . '<br>',
+    '#markup' => t('After you enter your OpenScholar ID and password and click log in, your OpenScholar account will be linked with %university. You\'ll only have to do this once.', array('%university' => variable_get('university_name'))) . '<br>',
     '#weight' => -3,
   );
 
@@ -143,7 +143,7 @@ function pinserver_authenticate_user_create() {
   if ($menu_item['access'] && vsite_vsite_exists_access()) {
     $output['new_site'] = array(
       '#prefix' => '<span id="pin-register">',
-      '#markup' => l('Don’t have an OpenScholar account?', 'http://docs.openscholar.harvard.edu/getting-started-with-openscholar'),
+      '#markup' => l('Don’t have an OpenScholar account?', variable_get('getting_started_os')),
       '#suffix' => '</span>',
       '#weight' => -1
     );

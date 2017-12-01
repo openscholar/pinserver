@@ -27,7 +27,7 @@ function pinserver_check_status($timeout = FALSE) {
 }
 
 /**
- * Checks if user is Harvard employee based on pinserver variable.
+ * Checks if user is University employee based on pinserver variable.
  *
  * @return string or FALSE
  */
@@ -93,7 +93,7 @@ function pinserver_remove_session() {
  */
 function pinserver_add_user_from_token($token_data, $use_session = FALSE){
 
-  // Places encrypted harvard uid into session array.
+  // Places encrypted university uid into session array.
   $pin_user['huid'] = $token_data['user_id'];
   $pin_user['reg_time'] = time();
   if (isset($_GET['__authen_huid'])) {

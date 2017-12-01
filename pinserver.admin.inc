@@ -12,7 +12,7 @@ function pinserver_config() {
 
   $form['pinserver'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Harvard Pinserver Configuration'),
+    '#title' => t('%university Pinserver Configuration', array('%university' => variable_get('university_name'))),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );
@@ -20,17 +20,17 @@ function pinserver_config() {
   $form['pinserver']['pinserver_pin_url'] = array(
     '#type' => 'textfield',
     '#required' => TRUE,
-    '#title' => t('Harvard PIN Server URL'),
-    '#default_value' => variable_get('pinserver_pin_url', 'https://www.pin1.harvard.edu/pin/authenticate'),
-    '#description' => t('Enter Pin server URL. For example: https://www.pin1.harvard.edu/pin/authenticate'),
+    '#title' => t('%university PIN Server URL', array('%university' => variable_get('university_name'))),
+    '#default_value' => variable_get('pinserver_pin_url', variable_get('pin_authenticate')),
+    '#description' => t('Enter Pin server URL. For example: variable_get('pin_authenticate')),
   );
 
   $form['pinserver']['pinserver_app_name'] = array(
     '#type' => 'textfield',
-    '#title' => t('Harvard PIN server application name'),
+    '#title' => t('%university PIN server application name', array('%university' => variable_get('university_name'))),
     '#required' => TRUE,
     '#default_value' => variable_get('pinserver_app_name'),
-    '#description' => t('Enter the application name given to you by Harvard Directory Services.' ),
+    '#description' => t('Enter the application name given to you by %university Directory Services.', array('%university' => variable_get('university_name')) ),
   );
 
   $form['pinserver']['pinserver_gpg_dir'] = array(
@@ -68,7 +68,7 @@ function pinserver_config() {
   $form['pinserver']['pinserver_auth_str'] = array(
     '#type' => 'radios',
     '#title' => t('PIN Authentication Server Setup'),
-    '#default_value' => variable_get('pinserver_auth_str', 'Good signature from "Harvard University PIN System'),
+    '#default_value' => variable_get('pinserver_auth_str', t('Good signature from "%university University PIN System', array('%university' => variable_get('university_name')))),
     '#options' => array(
       'Good signature from "Harvard University PIN System' => t('PIN only'),
       'Good signature from "authzproxy"' => t('PIN with AuthProxy'),
@@ -114,7 +114,7 @@ function pinserver_config() {
 
   $form['pinserver_logging'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Harvard Pinserver Logging'),
+    '#title' => t('%university Pinserver Logging', array('%university' => variable_get('university_name'))),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );

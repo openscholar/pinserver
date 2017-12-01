@@ -26,7 +26,7 @@ function pinserver_menu() {
 
   $items['admin/config/openscholar/pinserver'] = array(
     'title' => t('Pinserver'),
-    'description' => t('Modify Harvard Pinserver configuration, access, and logging'),
+    'description' => t('Modify %university Pinserver configuration, access, and logging', array('%university' => variable_get('university_name'))),
     'type' => MENU_NORMAL_ITEM,
     'weight' => 0,
     'page callback' => 'drupal_get_form',
@@ -100,7 +100,7 @@ function pinserver_check_user() {
   // First, verifies the pinserver settings.
   if ($error = pinserver_check_system_settings()) {
     error_log($error);
-    drupal_set_message(t("Harvard PIN service is not available at this time but should be available shortly. Please check back later or email us at !support_mail.", array('!support_mail' => '<a href=mailto:' . variable_get('pinserver_support_contact') . '>' . variable_get('pinserver_support_contact') . '</a>')));
+    drupal_set_message(t("!university PIN service is not available at this time but should be available shortly. Please check back later or email us at !support_mail.", array(('!support_mail' => '<a href=mailto:' . variable_get('pinserver_support_contact') . '>' . variable_get('pinserver_support_contact') . '</a>'), '!university' => variable_get('university_name'))));
     drupal_goto();
   }
 
@@ -532,7 +532,7 @@ function pinserver_error($type, $values) {
  *   All errors that occured due to a problem with the token or token processing.
  */
 function theme_pinserver_token_error($values = NULL) {
-  $message = '<p>' . t('Communication with the @harvard PIN server failed.', array('@harvard' => 'Harvard'));
+  $message = '<p>' . t('Communication with the @university PIN server failed.', array('@univeristy' => variable_get('university_name')));
   if (in_array('ip-mismatch', $values)) {
     $message .= t(' Note: Use of a VPN or tunnel connection may cause problems with PIN authentication.');
   }
