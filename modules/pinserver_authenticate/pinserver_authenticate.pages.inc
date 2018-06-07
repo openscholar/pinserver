@@ -114,7 +114,7 @@ function pinserver_authenticate_user_create() {
   }
 
   $output['notice'] = array(
-    '#markup' => t('After you enter your OpenScholar ID and password and click log in, your OpenScholar account will be linked with Harvard Key. You\'ll only have to do this once. If you don\'t have an OpenScholar account and need one, ask the site manager to create one for you.') . '<br>',
+    '#markup' => t('After you enter your OpenScholar ID and password and click log in, your OpenScholar account will be linked with Harvard Key. You\'ll only have to do this once. If you don\'t have an OpenScholar account and need one, ask the site manager to create one for you') . '<br>',
     '#weight' => -3,
   );
 
