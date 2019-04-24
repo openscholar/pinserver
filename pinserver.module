@@ -236,7 +236,7 @@ function pinserver_prepare_pin_v2_token($pin_parameters, $pin_signature) {
   $values['token'] = $pin_parameters;
 
   // @todo The signature is passed as is.
-  $values['pgp_signature'] = $pgp_signature;
+  $values['pgp_signature'] = $pin_signature;
 
   // App Name is returned as is.
   $values['app'] = $token_array[0];
