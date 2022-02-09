@@ -78,11 +78,16 @@ function pinserver_authenticate_get_uid_from_huid($huid = NULL) {
     $or = db_or()
       ->condition('huid', $huid)
       ->condition('hashID', $huid);
-    return db_select('pinserver_users', 'pu')
+    $uid = db_select('pinserver_users', 'pu')
       ->fields('pu', array('uid'))
       ->condition($or)
       ->execute()
       ->fetchField();
+    
+    // Verify that this user exists before returning it.
+    if ($uid && user_load($uid)) {
+      return $uid;
+    }
   }
 
   return FALSE;
